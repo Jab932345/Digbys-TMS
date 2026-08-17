@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digby's TMS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f4ef;--sidebar:#1c1a17;--sidebar2:#252320;
+  --card:#ffffff;--border:#e2ddd6;--border2:#f0ece6;
+  --text:#1c1a17;--text2:#6b6358;--text3:#9a8f82;
+  --ok:#3B6D11;--ok-bg:#EAF3DE;
+  --warn:#BA7517;--warn-bg:#FAEEDA;
+  --crit:#A32D2D;--crit-bg:#FCEBEB;
+  --off:#9a8f82;--off-bg:#f0ece6;
+  --snooze:#185FA5;--snooze-bg:#E6F1FB;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex}
+
+/* SIDEBAR */
+.sb{width:248px;min-width:248px;background:var(--sidebar);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.sb-logo{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-logo h1{font-family:'Playfair Display',serif;font-size:17px;font-weight:500;color:#f7f4ef;letter-spacing:-.01em}
+.sb-logo p{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+.sb-sec{padding:14px 12px 6px}
+.sb-sec-lbl{font-size:9px;letter-spacing:.14em;color:rgba(255,255,255,.28);text-transform:uppercase;padding:0 8px;margin-bottom:6px}
+.sb-unit{padding:9px 12px;border-radius:6px;cursor:pointer;margin-bottom:1px;transition:all .15s;display:flex;align-items:center;gap:9px}
+.sb-unit:hover{background:rgba(255,255,255,.07)}
+.sb-unit.active{background:rgba(255,255,255,.1)}
+.udot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.udot.ok,.udot.none{background:var(--ok)}
+.udot.warning{background:var(--warn)}
+.udot.critical{background:var(--crit);animation:pulse 1.5s infinite}
+.udot.offline{background:var(--off)}
+.udot.snoozed{background:var(--snooze)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.sb-unit-name{font-size:12px;color:rgba(255,255,255,.72);flex:1;line-height:1.3}
+.sb-unit-temp{font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,.9);flex-shrink:0}
+.sb-foot{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:rgba(255,255,255,.22)}
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-right:5px;animation:pulse 2s infinite}
+
+/* TOPBAR */
+.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{padding:0 24px;height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--card);flex-shrink:0}
+.topbar-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:500}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.tabs{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.tab{padding:6px 14px;font-size:11px;cursor:pointer;color:var(--text2);background:var(--card);border:none;transition:all .15s;font-family:'Inter',sans-serif}
+.tab:not(:first-child){border-left:1px solid var(--border)}
+.tab.active{background:var(--text);color:#fff}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* STAT ROW */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.stat-lbl{font-size:10px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
+.stat-val{font-size:22px;font-weight:500;font-family:'DM Mono',monospace}
+.stat-val.ok{color:var(--ok)}.stat-val.warn{color:var(--warn)}.stat-val.crit{color:var(--crit)}
+
+/* UNIT CARDS */
+.unit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:20px}
+.ucard{background:var(--card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .2s}
+.ucard:hover{border-color:var(--text3)}
+.ucard.warning{border-color:var(--warn)}
+.ucard.critical{border-color:var(--crit)}
+.ucard.offline{opacity:.6}
+.ucard-head{padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:flex-start}
+.ucard-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:500;margin-bottom:2px}
+.ucard-loc{font-size:10px;color:var(--text3)}
+.ucard-right{text-align:right}
+.ucard-temp{font-family:'DM Mono',monospace;font-size:30px;font-weight:500;line-height:1}
+.ucard-temp.ok,.ucard-temp.none{color:var(--ok)}
+.ucard-temp.warning{color:var(--warn)}
+.ucard-temp.critical{color:var(--crit)}
+.ucard-temp.offline{color:var(--off)}
+.ucard-temp.snoozed{color:var(--snooze)}
+.badge{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:500;letter-spacing:.06em;display:inline-block;margin-top:4px}
+.badge.ok,.badge.none{background:var(--ok-bg);color:var(--ok)}
+.badge.warning{background:var(--warn-bg);color:var(--warn)}
+.badge.critical{background:var(--crit-bg);color:var(--crit);animation:pulse 1.5s infinite}
+.badge.offline{background:var(--off-bg);color:var(--off)}
+.badge.snoozed{background:var(--snooze-bg);color:var(--snooze)}
+.ucard-spark{padding:0 16px;height:54px}
+.ucard-foot{padding:8px 16px 12px;display:flex;justify-content:space-between;font-size:10px;color:var(--text3)}
+.ucard-controls{padding:0 16px 12px;display:flex;gap:6px}
+.cbtn{padding:5px 12px;border-radius:5px;border:1px solid var(--border);font-size:10px;cursor:pointer;background:var(--card);color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s}
+.cbtn:hover{border-color:var(--text3);color:var(--text)}
+.cbtn.amber{border-color:#FAC775;color:#854F0B;background:#FAEEDA}
+.cbtn.blue{border-color:#93C5FD;color:#1D4ED8;background:#EFF6FF}
+
+/* DETAIL PANEL */
+.detail{display:none}
+.detail.show{display:block}
+.detail-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.back-btn{font-size:12px;color:var(--text3);cursor:pointer;padding:5px 0;display:flex;align-items:center;gap:4px}
+.back-btn:hover{color:var(--text)}
+.detail-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:500}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.dstat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.dstat-lbl{font-size:10px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
+.dstat-val{font-family:'DM Mono',monospace;font-size:24px;font-weight:500}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
+.chart-title{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.chart-wrap{height:180px}
+.ctrl-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
+.ctrl-title{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+.ctrl-row{display:flex;gap:8px;flex-wrap:wrap}
+.ctrl-btn{padding:8px 16px;border-radius:6px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--card);color:var(--text);font-family:'Inter',sans-serif;transition:all .15s}
+.ctrl-btn:hover{border-color:var(--text3);background:var(--bg)}
+.ctrl-btn.amber{border-color:#FAC775;color:#854F0B;background:#FAEEDA}
+.ctrl-btn.blue{border-color:#93C5FD;color:#1D4ED8;background:#EFF6FF}
+.ctrl-btn.red{border-color:#FCA5A5;color:var(--crit);background:var(--crit-bg)}
+
+/* LOG TABLE */
+.log-table{width:100%;border-collapse:collapse;font-size:12px}
+.log-table th{text-align:left;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.07em;color:var(--text3);text-transform:uppercase;font-weight:500}
+.log-table td{padding:8px 12px;border-bottom:1px solid var(--border2)}
+.log-table tr:last-child td{border-bottom:none}
+.log-table tr:hover td{background:var(--bg)}
+.log-table .tok{color:var(--ok);font-family:'DM Mono',monospace}
+.log-table .twarn{color:var(--warn);font-family:'DM Mono',monospace}
+.log-table .tcrit{color:var(--crit);font-family:'DM Mono',monospace}
+.tbl-card{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+
+/* HACCP TAB */
+.haccp-filter{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.haccp-filter select,.haccp-filter input{padding:7px 11px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--card);color:var(--text);font-family:'Inter',sans-serif}
+.haccp-filter button{padding:7px 14px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:var(--card);color:var(--text);font-family:'Inter',sans-serif}
+.haccp-filter button:hover{background:var(--bg)}
+
+/* SETUP */
+.overlay{position:fixed;inset:0;background:rgba(28,26,23,.88);display:flex;align-items:center;justify-content:center;z-index:999}
+.setup-box{background:var(--card);border-radius:12px;padding:32px;width:460px;max-width:90vw}
+.setup-box h2{font-family:'Playfair Display',serif;font-size:21px;margin-bottom:5px}
+.setup-box p{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.5}
+.sf{margin-bottom:13px}
+.sf label{display:block;font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.sf input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;background:var(--bg)}
+.sf input:focus{outline:none;border-color:var(--text)}
+.setup-btn{width:100%;padding:11px;border-radius:6px;background:var(--text);color:#fff;border:none;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;margin-top:4px;font-weight:500}
+.setup-btn:hover{background:#333}
+.setup-note{font-size:10px;color:var(--text3);margin-top:10px;text-align:center}
+.setup-err{font-size:11px;color:var(--crit);margin-top:8px;text-align:center;display:none}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:48px 20px;color:var(--text3);font-size:13px}
+.empty-icon{font-size:32px;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<!-- SETUP OVERLAY -->
+<div class="overlay" id="setup-overlay">
+  <div class="setup-box">
+    <h2>Digby's TMS</h2>
+    <p>Connect to your Supabase project to start monitoring. You'll only need to do this once per browser.</p>
+    <div class="sf">
+      <label>Supabase URL</label>
+      <input id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co">
+    </div>
+    <div class="sf">
+      <label>Supabase Anon Key</label>
+      <input id="sb-key" placeholder="eyJhbGci…">
+    </div>
+    <button class="setup-btn" onclick="initSupabase()">Connect dashboard</button>
+    <div class="setup-err" id="setup-err">Connection failed — check your URL and key</div>
+    <p class="setup-note">Saved in this browser. Clear site data to re-enter.</p>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sb">
+  <div class="sb-logo">
+    <h1>Digby's TMS</h1>
+    <p>Temperature Monitoring</p>
+  </div>
+  <div class="sb-sec">
+    <div class="sb-sec-lbl">Units</div>
+    <div id="sb-units">
+      <div class="empty" style="padding:20px;font-size:11px;color:rgba(255,255,255,.2)">Loading…</div>
+    </div>
+  </div>
+  <div class="sb-foot">
+    <div><span class="live-dot"></span><span id="sb-status">connecting</span></div>
+    <div style="margin-top:3px" id="sb-clock"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Overview</div>
+    <div class="topbar-right">
+      <div class="tabs">
+        <button class="tab active" onclick="setTab('overview')">Dashboard</button>
+        <button class="tab" onclick="setTab('detail')">Unit detail</button>
+        <button class="tab" onclick="setTab('haccp')">HACCP log</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD TAB -->
+    <div id="tab-overview">
+      <div class="stat-row" id="stat-row">
+        <div class="stat-card"><div class="stat-lbl">Online</div><div class="stat-val" id="s-online">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">Alerts</div><div class="stat-val" id="s-alerts">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">Snoozed</div><div class="stat-val" id="s-snooze">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">Last reading</div><div class="stat-val" style="font-size:14px" id="s-last">—</div></div>
+      </div>
+      <div class="unit-grid" id="unit-grid"></div>
+    </div>
+
+    <!-- DETAIL TAB -->
+    <div id="tab-detail" style="display:none" class="detail" id="detail-panel">
+      <div class="detail-head">
+        <div class="back-btn" onclick="setTab('overview')">← Back</div>
+        <div class="detail-title" id="detail-name">Select a unit</div>
+        <span class="badge" id="detail-badge"></span>
+      </div>
+      <div class="detail-grid">
+        <div class="dstat"><div class="dstat-lbl">Current temp</div><div class="dstat-val" id="d-temp">—</div></div>
+        <div class="dstat"><div class="dstat-lbl">Warning</div><div class="dstat-val" style="color:var(--warn)" id="d-warn">—</div></div>
+        <div class="dstat"><div class="dstat-lbl">Critical</div><div class="dstat-val" style="color:var(--crit)" id="d-crit">—</div></div>
+        <div class="dstat"><div class="dstat-lbl">Last reading</div><div class="dstat-val" style="font-size:14px" id="d-last">—</div></div>
+        <div class="dstat"><div class="dstat-lbl">Min (24hr)</div><div class="dstat-val" id="d-min">—</div></div>
+        <div class="dstat"><div class="dstat-lbl">Max (24hr)</div><div class="dstat-val" id="d-max">—</div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">
+          <span>24hr temperature</span>
+          <span style="font-size:10px;color:var(--text3)" id="d-range"></span>
+        </div>
+        <div class="chart-wrap"><canvas id="detail-chart"></canvas></div>
+      </div>
+      <div class="ctrl-card">
+        <div class="ctrl-title">Controls</div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn amber" id="btn-snooze" onclick="sendSnooze()">Snooze alarm — 1 hour</button>
+          <button class="ctrl-btn blue" id="btn-defrost" onclick="sendDefrost()">Enable defrost mode</button>
+          <button class="ctrl-btn red" onclick="sendSilence()">Silence alarm</button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:10px" id="cmd-status"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Recent readings</div>
+        <div class="tbl-card" style="border:none">
+          <table class="log-table">
+            <thead><tr><th>Time</th><th>Temperature</th><th>Status</th><th>Snoozed</th></tr></thead>
+            <tbody id="detail-log"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- HACCP TAB -->
+    <div id="tab-haccp" style="display:none">
+      <div class="haccp-filter">
+        <select id="h-unit"></select>
+        <input type="date" id="h-date">
+        <button onclick="loadHACCP()">Load records</button>
+        <button onclick="exportCSV()" style="margin-left:4px">Export CSV ↓</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px" id="h-summary"></div>
+      <div class="tbl-card">
+        <table class="log-table">
+          <thead>
+            <tr><th>Date</th><th>Time</th><th>Unit</th><th>Temperature</th><th>Status</th><th>Snoozed</th></tr>
+          </thead>
+          <tbody id="h-body">
+            <tr><td colspan="6" class="empty"><div class="empty-icon">📋</div>Select a unit and date above</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── GLOBALS ──
+let SB = null;
+let UNITS = {};
+let CHARTS = {};
+let activeTab = 'overview';
+let selectedUnit = null;
+let defrostActive = {};
+
+// ── SUPABASE INIT ──
+async function initSupabase() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  if (!url || !key) return;
+  try {
+    SB = window.supabase.createClient(url, key);
+    const { error } = await SB.from('units').select('id').limit(1);
+    if (error) throw error;
+    localStorage.setItem('tms_url', url);
+    localStorage.setItem('tms_key', key);
+    document.getElementById('setup-overlay').style.display = 'none';
+    boot();
+  } catch(e) {
+    document.getElementById('setup-err').style.display = 'block';
+    console.error(e);
+  }
+}
+
+async function boot() {
+  await loadUnits();
+  await loadLatest();
+  subscribeRealtime();
+  populateHACCPSelect();
+  setInterval(tick, 1000);
+  setInterval(loadLatest, 30000);
+}
+
+// ── UNITS ──
+async function loadUnits() {
+  const { data } = await SB.from('units').select('*').eq('active', true).order('name');
+  if (!data) return;
+  data.forEach(u => {
+    UNITS[u.name] = {
+      ...u, temp: null, alert: 'offline',
+      snoozed: false, lastSeen: null, history: []
+    };
+    defrostActive[u.name] = false;
+  });
+  renderSidebar();
+  renderGrid();
+  renderStats();
+}
+
+async function loadLatest() {
+  const since = new Date(Date.now() - 90*60*1000).toISOString();
+  const { data } = await SB
+    .from('temperature_logs')
+    .select('*')
+    .gte('created_at', since)
+    .order('created_at', { ascending: true });
+  if (!data) return;
+  // Reset histories
+  Object.keys(UNITS).forEach(n => { UNITS[n].history = []; });
+  data.forEach(r => {
+    if (!UNITS[r.unit_name]) return;
+    UNITS[r.unit_name].temp = r.temp;
+    UNITS[r.unit_name].alert = r.alert;
+    UNITS[r.unit_name].snoozed = r.snoozed;
+    UNITS[r.unit_name].lastSeen = r.created_at;
+    UNITS[r.unit_name].history.push({ t: r.created_at, v: r.temp, a: r.alert });
+  });
+  document.getElementById('sb-status').textContent = 'live';
+  renderAll();
+}
+
+// ── REALTIME ──
+function subscribeRealtime() {
+  SB.channel('tms-live')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'temperature_logs' }, p => {
+      const r = p.new;
+      if (!UNITS[r.unit_name]) return;
+      const u = UNITS[r.unit_name];
+      u.temp = r.temp; u.alert = r.alert;
+      u.snoozed = r.snoozed; u.lastSeen = r.created_at;
+      u.history.push({ t: r.created_at, v: r.temp, a: r.alert });
+      if (u.history.length > 90) u.history.shift();
+      document.getElementById('sb-status').textContent = 'live · ' + new Date(r.created_at).toLocaleTimeString('en-GB');
+      renderAll();
+      if (selectedUnit === r.unit_name && activeTab === 'detail') updateDetailLive(r);
+    })
+    .subscribe();
+}
+
+// ── RENDER ALL ──
+function renderAll() {
+  renderSidebar();
+  renderStats();
+  if (activeTab === 'overview') renderGrid();
+  if (activeTab === 'detail' && selectedUnit) renderDetailFull();
+}
+
+// ── SIDEBAR ──
+function renderSidebar() {
+  const el = document.getElementById('sb-units');
+  el.innerHTML = '';
+  Object.values(UNITS).forEach(u => {
+    const st = status(u);
+    const div = document.createElement('div');
+    div.className = 'sb-unit' + (selectedUnit === u.name ? ' active' : '');
+    div.onclick = () => { selectUnit(u.name); setTab('detail'); };
+    div.innerHTML = `
+      <div class="udot ${st}"></div>
+      <div class="sb-unit-name">${u.name}</div>
+      <div class="sb-unit-temp">${fTemp(u.temp)}</div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+// ── STATS ──
+function renderStats() {
+  const all = Object.values(UNITS);
+  const online = all.filter(u => status(u) !== 'offline').length;
+  const alerts = all.filter(u => u.alert === 'critical' || u.alert === 'warning').length;
+  const snz    = all.filter(u => u.snoozed).length;
+  const last   = all.map(u => u.lastSeen).filter(Boolean).sort().pop();
+  document.getElementById('s-online').textContent  = online + '/' + all.length;
+  document.getElementById('s-online').className    = 'stat-val ' + (online === all.length ? 'ok' : 'warn');
+  document.getElementById('s-alerts').textContent  = alerts;
+  document.getElementById('s-alerts').className    = 'stat-val ' + (alerts === 0 ? 'ok' : alerts > 0 ? 'crit' : '');
+  document.getElementById('s-snooze').textContent  = snz;
+  document.getElementById('s-last').textContent    = last ? timeAgo(last) : '—';
+}
+
+// ── GRID ──
+function renderGrid() {
+  const grid = document.getElementById('unit-grid');
+  Object.values(UNITS).forEach(u => {
+    const st = status(u);
+    let card = document.getElementById('uc-' + slug(u.name));
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'uc-' + slug(u.name);
+      card.className = 'ucard';
+      card.onclick = () => { selectUnit(u.name); setTab('detail'); };
+      grid.appendChild(card);
+    }
+    card.className = 'ucard ' + (st === 'none' ? 'ok' : st);
+    const tdClass = st === 'none' ? 'ok' : st;
+    const hist = u.history;
+    card.innerHTML = `
+      <div class="ucard-head">
+        <div>
+          <div class="ucard-name">${u.name}</div>
+          <div class="ucard-loc">${u.location || ''}</div>
+        </div>
+        <div class="ucard-right">
+          <div class="ucard-temp ${tdClass}">${fTemp(u.temp)}</div>
+          <span class="badge ${tdClass}">${statusLabel(st)}</span>
+        </div>
+      </div>
+      <div class="ucard-spark"><canvas id="sp-${slug(u.name)}" style="width:100%;height:48px"></canvas></div>
+      <div class="ucard-foot">
+        <span>Warn ${u.warn_temp}° · Crit ${u.critical_temp}°</span>
+        <span>${timeAgo(u.lastSeen)}</span>
+      </div>
+      <div class="ucard-controls">
+        <button class="cbtn amber" onclick="event.stopPropagation();quickSnooze('${u.name}')">Snooze 1hr</button>
+        <button class="cbtn blue" onclick="event.stopPropagation();quickDefrost('${u.name}')">Defrost</button>
+      </div>
+    `;
+    setTimeout(() => drawSparkline(u.name), 30);
+  });
+}
+
+function drawSparkline(name) {
+  const u = UNITS[name];
+  const id = 'sp-' + slug(name);
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const st = status(u);
+  const color = { ok:'#3B6D11', none:'#3B6D11', warning:'#BA7517', critical:'#A32D2D', offline:'#9a8f82', snoozed:'#185FA5' }[st] || '#3B6D11';
+  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
+  const pts = u.history.slice(-30);
+  if (!pts.length) return;
+  CHARTS[id] = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: pts.map(() => ''),
+      datasets: [{
+        data: pts.map(p => p.v),
+        borderColor: color, borderWidth: 1.5,
+        pointRadius: 0, tension: 0.3, fill: true,
+        backgroundColor: color + '18'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: { x: { display: false }, y: { display: false } }
+    }
+  });
+}
+
+// ── DETAIL ──
+function renderDetailFull() {
+  if (!selectedUnit) return;
+  const u = UNITS[selectedUnit];
+  const st = status(u);
+  const stc = st === 'none' ? 'ok' : st;
+  document.getElementById('detail-name').textContent = u.name;
+  document.getElementById('detail-badge').textContent = statusLabel(st);
+  document.getElementById('detail-badge').className = 'badge ' + stc;
+  document.getElementById('d-temp').textContent = fTemp(u.temp);
+  document.getElementById('d-temp').className   = 'dstat-val ' + stc;
+  document.getElementById('d-warn').textContent = u.warn_temp + '°C';
+  document.getElementById('d-crit').textContent = u.critical_temp + '°C';
+  document.getElementById('d-last').textContent = u.lastSeen ? new Date(u.lastSeen).toLocaleTimeString('en-GB') : '—';
+  const temps = u.history.map(p => p.v).filter(v => v !== null);
+  document.getElementById('d-min').textContent = temps.length ? Math.min(...temps).toFixed(1) + '°C' : '—';
+  document.getElementById('d-max').textContent = temps.length ? Math.max(...temps).toFixed(1) + '°C' : '—';
+  // Chart
+  drawDetailChart(u);
+  // Log
+  renderDetailLog(u);
+}
+
+function drawDetailChart(u) {
+  const canvas = document.getElementById('detail-chart');
+  if (!canvas) return;
+  if (CHARTS['detail']) { CHARTS['detail'].destroy(); }
+  const pts = u.history.slice(-60);
+  if (!pts.length) return;
+  const st = status(u);
+  const color = { ok:'#3B6D11', none:'#3B6D11', warning:'#BA7517', critical:'#A32D2D', offline:'#9a8f82' }[st] || '#3B6D11';
+  CHARTS['detail'] = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: pts.map(p => new Date(p.t).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })),
+      datasets: [
+        {
+          label: 'Temperature',
+          data: pts.map(p => p.v),
+          borderColor: color, borderWidth: 2,
+          pointRadius: 0, tension: 0.3,
+          fill: true, backgroundColor: color + '18'
+        },
+        {
+          label: 'Warning',
+          data: pts.map(() => u.warn_temp),
+          borderColor: '#BA7517', borderWidth: 1,
+          borderDash: [4, 4], pointRadius: 0, fill: false
+        },
+        {
+          label: 'Critical',
+          data: pts.map(() => u.critical_temp),
+          borderColor: '#A32D2D', borderWidth: 1,
+          borderDash: [4, 4], pointRadius: 0, fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + '°C'
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { maxTicksLimit: 6, font: { size: 10 } }, grid: { color: '#f0ece6' } },
+        y: { ticks: { font: { size: 10 }, callback: v => v + '°' }, grid: { color: '#f0ece6' } }
+      }
+    }
+  });
+}
+
+function renderDetailLog(u) {
+  const tbody = document.getElementById('detail-log');
+  const recent = u.history.slice(-15).reverse();
+  if (!recent.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">No recent readings</td></tr>';
+    return;
+  }
+  tbody.innerHTML = recent.map(p => {
+    const a = p.a || 'none';
+    const tc = a === 'critical' ? 'tcrit' : a === 'warning' ? 'twarn' : 'tok';
+    return `<tr>
+      <td>${new Date(p.t).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</td>
+      <td class="${tc}">${p.v}°C</td>
+      <td><span class="badge ${a}">${statusLabel(a)}</span></td>
+      <td>—</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateDetailLive(r) {
+  document.getElementById('d-temp').textContent = fTemp(r.temp);
+  const tbody = document.getElementById('detail-log');
+  const a = r.alert || 'none';
+  const tc = a === 'critical' ? 'tcrit' : a === 'warning' ? 'twarn' : 'tok';
+  const row = `<tr>
+    <td>${new Date(r.created_at).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</td>
+    <td class="${tc}">${r.temp}°C</td>
+    <td><span class="badge ${a}">${statusLabel(a)}</span></td>
+    <td>${r.snoozed ? 'Yes' : '—'}</td>
+  </tr>`;
+  tbody.insertAdjacentHTML('afterbegin', row);
+}
+
+// ── COMMANDS ──
+async function sendCmd(unit, command, payload = {}) {
+  if (!SB) return;
+  await SB.from('commands').insert({ unit_name: unit, command, payload, executed: false });
+  document.getElementById('cmd-status').textContent = '✓ Command sent: ' + command + ' — Pi will execute within 30s';
+  setTimeout(() => { document.getElementById('cmd-status').textContent = ''; }, 5000);
+}
+
+function sendSnooze() { if (selectedUnit) sendCmd(selectedUnit, 'snooze', { minutes: 60 }); }
+function sendDefrost() {
+  if (!selectedUnit) return;
+  const active = defrostActive[selectedUnit];
+  defrostActive[selectedUnit] = !active;
+  document.getElementById('btn-defrost').textContent = active ? 'Enable defrost mode' : 'Disable defrost mode';
+  sendCmd(selectedUnit, active ? 'defrost_off' : 'defrost_on');
+}
+function sendSilence() { if (selectedUnit) sendCmd(selectedUnit, 'silence'); }
+function quickSnooze(name) { sendCmd(name, 'snooze', { minutes: 60 }); }
+function quickDefrost(name) { sendCmd(name, 'defrost_on'); }
+
+// ── HACCP ──
+function populateHACCPSelect() {
+  const sel = document.getElementById('h-unit');
+  sel.innerHTML = Object.keys(UNITS).map(n => `<option value="${n}">${n}</option>`).join('');
+  document.getElementById('h-date').value = new Date().toISOString().slice(0, 10);
+}
+
+async function loadHACCP() {
+  const unit = document.getElementById('h-unit').value;
+  const date = document.getElementById('h-date').value;
+  if (!unit || !date) return;
+  const { data } = await SB
+    .from('temperature_logs')
+    .select('*')
+    .eq('unit_name', unit)
+    .gte('created_at', date + 'T00:00:00')
+    .lte('created_at', date + 'T23:59:59')
+    .order('created_at');
+  const tbody = document.getElementById('h-body');
+  const sum   = document.getElementById('h-summary');
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty"><div class="empty-icon">📋</div>No records found for this unit and date</td></tr>';
+    sum.textContent = '';
+    return;
+  }
+  const temps = data.map(r => r.temp).filter(v => v !== null);
+  const avg = temps.length ? (temps.reduce((a,b) => a+b, 0) / temps.length).toFixed(1) : '—';
+  const min = temps.length ? Math.min(...temps).toFixed(1) : '—';
+  const max = temps.length ? Math.max(...temps).toFixed(1) : '—';
+  sum.textContent = `${data.length} readings · Avg ${avg}°C · Min ${min}°C · Max ${max}°C`;
+  tbody.innerHTML = data.map(r => {
+    const d = new Date(r.created_at);
+    const a = r.alert || 'none';
+    const tc = a === 'critical' ? 'tcrit' : a === 'warning' ? 'twarn' : 'tok';
+    return `<tr>
+      <td>${d.toLocaleDateString('en-GB')}</td>
+      <td>${d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</td>
+      <td>${r.unit_name}</td>
+      <td class="${tc}">${r.temp}°C</td>
+      <td><span class="badge ${a}">${statusLabel(a)}</span></td>
+      <td>${r.snoozed ? 'Yes' : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportCSV() {
+  const rows = [...document.querySelectorAll('#h-body tr')];
+  const lines = ['Date,Time,Unit,Temperature,Status,Snoozed'];
+  rows.forEach(r => {
+    const cells = [...r.querySelectorAll('td')];
+    if (cells.length < 6) return;
+    lines.push(cells.map(c => '"' + c.innerText.replace(/"/g,'""') + '"').join(','));
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
+  a.download = 'haccp-' + document.getElementById('h-unit').value.replace(/\s+/g,'-').toLowerCase() + '-' + document.getElementById('h-date').value + '.csv';
+  a.click();
+}
+
+// ── TABS ──
+function setTab(tab) {
+  activeTab = tab;
+  ['overview','detail','haccp'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['overview','detail','haccp'][i] === tab);
+  });
+  if (tab === 'detail' && selectedUnit) renderDetailFull();
+}
+
+function selectUnit(name) {
+  selectedUnit = name;
+  renderSidebar();
+}
+
+// ── HELPERS ──
+function status(u) {
+  if (!u.lastSeen) return 'offline';
+  const ageMins = (Date.now() - new Date(u.lastSeen)) / 60000;
+  if (ageMins > 5) return 'offline';
+  if (u.snoozed) return 'snoozed';
+  return u.alert || 'ok';
+}
+
+function statusLabel(s) {
+  return { ok:'NOMINAL', none:'NOMINAL', warning:'WARNING', critical:'CRITICAL', offline:'OFFLINE', snoozed:'SNOOZED' }[s] || s.toUpperCase();
+}
+
+function fTemp(t) { return t !== null && t !== undefined ? t.toFixed(1) + '°C' : '—'; }
+
+function timeAgo(iso) {
+  if (!iso) return 'never';
+  const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (s < 10) return 'just now';
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  return Math.floor(s/3600) + 'h ago';
+}
+
+function slug(s) { return s.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-]/g,'').toLowerCase(); }
+
+function tick() {
+  const now = new Date();
+  document.getElementById('sb-clock').textContent = now.toLocaleTimeString('en-GB');
+  // Mark offline after 5 min no reading
+  Object.values(UNITS).forEach(u => {
+    if (u.lastSeen) {
+      const age = (Date.now() - new Date(u.lastSeen)) / 60000;
+      if (age > 5 && u.alert !== 'offline') { u.alert = 'offline'; renderSidebar(); }
+    }
+  });
+}
+
+// ── AUTO CONNECT ──
+window.addEventListener('load', () => {
+  SB = window.supabase.createClient('https://jaajrllkozknilvmdezt.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphYWpybGxrb3prbmlsdm1kZXp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMjQxNDAsImV4cCI6MjA5MjYwMDE0MH0.09U5cba3JxRmysrn2X3TxPqr-q6jJE4QhyeKQwEK03M');
+  document.getElementById('setup-overlay').style.display = 'none';
+  boot();
+});
+</script>
+</body>
+</html>
