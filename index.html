@@ -4,325 +4,197 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Digby's TMS</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-// ── EDIT MODAL ──
-function openEditModal() {
-  if (!selectedUnit || !UNITS[selectedUnit]) return;
-  const u = UNITS[selectedUnit];
-  document.getElementById('edit-name').value = u.name;
-  document.getElementById('edit-location').value = u.location || '';
-  document.getElementById('edit-warn').value = u.warn_temp;
-  document.getElementById('edit-crit').value = u.critical_temp;
-  document.getElementById('edit-status').textContent = '';
-  document.getElementById('edit-modal').classList.add('show');
-}
-
-function closeEditModal() {
-  document.getElementById('edit-modal').classList.remove('show');
-}
-
-async function saveEdit() {
-  const name     = document.getElementById('edit-name').value.trim();
-  const location = document.getElementById('edit-location').value.trim();
-  const warn     = parseFloat(document.getElementById('edit-warn').value);
-  const crit     = parseFloat(document.getElementById('edit-crit').value);
-
-  if (!name || isNaN(warn) || isNaN(crit)) {
-    document.getElementById('edit-status').textContent = 'Fill in all fields';
-    document.getElementById('edit-status').style.color = 'var(--crit)';
-    return;
-  }
-
-  const { error } = await SB
-    .from('units')
-    .update({ name, location, warn_temp: warn, critical_temp: crit })
-    .eq('name', selectedUnit);
-
-  if (error) {
-    document.getElementById('edit-status').textContent = 'Save failed: ' + error.message;
-    document.getElementById('edit-status').style.color = 'var(--crit)';
-    return;
-  }
-
-  // Update local state
-  UNITS[name] = { ...UNITS[selectedUnit], name, location, warn_temp: warn, critical_temp: crit };
-  if (name !== selectedUnit) {
-    delete UNITS[selectedUnit];
-    selectedUnit = name;
-  }
-
-  document.getElementById('edit-status').textContent = '✓ Saved — Pi will push new thresholds to node within 5 minutes';
-  document.getElementById('edit-status').style.color = 'var(--ok)';
-
-  renderAll();
-  setTimeout(closeEditModal, 2000);
-}
-
-// Close modal on overlay click
-document.getElementById('edit-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeEditModal();
-});
-
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
-// ── EDIT MODAL ──
-function openEditModal() {
-  if (!selectedUnit || !UNITS[selectedUnit]) return;
-  const u = UNITS[selectedUnit];
-  document.getElementById('edit-name').value = u.name;
-  document.getElementById('edit-location').value = u.location || '';
-  document.getElementById('edit-warn').value = u.warn_temp;
-  document.getElementById('edit-crit').value = u.critical_temp;
-  document.getElementById('edit-status').textContent = '';
-  document.getElementById('edit-modal').classList.add('show');
-}
-
-function closeEditModal() {
-  document.getElementById('edit-modal').classList.remove('show');
-}
-
-async function saveEdit() {
-  const name     = document.getElementById('edit-name').value.trim();
-  const location = document.getElementById('edit-location').value.trim();
-  const warn     = parseFloat(document.getElementById('edit-warn').value);
-  const crit     = parseFloat(document.getElementById('edit-crit').value);
-
-  if (!name || isNaN(warn) || isNaN(crit)) {
-    document.getElementById('edit-status').textContent = 'Fill in all fields';
-    document.getElementById('edit-status').style.color = 'var(--crit)';
-    return;
-  }
-
-  const { error } = await SB
-    .from('units')
-    .update({ name, location, warn_temp: warn, critical_temp: crit })
-    .eq('name', selectedUnit);
-
-  if (error) {
-    document.getElementById('edit-status').textContent = 'Save failed: ' + error.message;
-    document.getElementById('edit-status').style.color = 'var(--crit)';
-    return;
-  }
-
-  // Update local state
-  UNITS[name] = { ...UNITS[selectedUnit], name, location, warn_temp: warn, critical_temp: crit };
-  if (name !== selectedUnit) {
-    delete UNITS[selectedUnit];
-    selectedUnit = name;
-  }
-
-  document.getElementById('edit-status').textContent = '✓ Saved — Pi will push new thresholds to node within 5 minutes';
-  document.getElementById('edit-status').style.color = 'var(--ok)';
-
-  renderAll();
-  setTimeout(closeEditModal, 2000);
-}
-
-// Close modal on overlay click
-document.getElementById('edit-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeEditModal();
-});
-
-</script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f7f4ef;--sidebar:#1c1a17;--sidebar2:#252320;
-  --card:#ffffff;--border:#e2ddd6;--border2:#f0ece6;
-  --text:#1c1a17;--text2:#6b6358;--text3:#9a8f82;
-  --ok:#3B6D11;--ok-bg:#EAF3DE;
-  --warn:#BA7517;--warn-bg:#FAEEDA;
-  --crit:#A32D2D;--crit-bg:#FCEBEB;
-  --off:#9a8f82;--off-bg:#f0ece6;
-  --snooze:#185FA5;--snooze-bg:#E6F1FB;
+  --bg:#0f0e0c;
+  --bg2:#161410;
+  --bg3:#1e1c18;
+  --card:#1c1a16;
+  --card2:#242118;
+  --border:#2e2b24;
+  --border2:#3a362d;
+  --text:#f0ece4;
+  --text2:#a89e8e;
+  --text3:#6b6254;
+  --ok:#4a8c1c;--ok-d:#2d5a0e;--ok-bg:rgba(74,140,28,.12);
+  --warn:#c4821a;--warn-d:#8a5a0a;--warn-bg:rgba(196,130,26,.12);
+  --crit:#cc3333;--crit-d:#8a1a1a;--crit-bg:rgba(204,51,51,.12);
+  --off:#4a4540;--off-bg:rgba(74,69,64,.12);
+  --snooze:#2a6abf;--snooze-bg:rgba(42,106,191,.12);
+  --accent:#c4a45a;
 }
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex}
 
-/* SIDEBAR */
-.sb{width:248px;min-width:248px;background:var(--sidebar);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
-.sb-logo{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
-.sb-logo h1{font-family:'Playfair Display',serif;font-size:17px;font-weight:500;color:#f7f4ef;letter-spacing:-.01em}
-.sb-logo p{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
-.sb-sec{padding:14px 12px 6px}
-.sb-sec-lbl{font-size:9px;letter-spacing:.14em;color:rgba(255,255,255,.28);text-transform:uppercase;padding:0 8px;margin-bottom:6px}
-.sb-unit{padding:9px 12px;border-radius:6px;cursor:pointer;margin-bottom:1px;transition:all .15s;display:flex;align-items:center;gap:9px}
-.sb-unit:hover{background:rgba(255,255,255,.07)}
-.sb-unit.active{background:rgba(255,255,255,.1)}
+/* ── SIDEBAR ── */
+.sb{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.sb-logo{padding:20px 18px 14px;border-bottom:1px solid var(--border)}
+.sb-logo h1{font-family:'Playfair Display',serif;font-size:16px;font-weight:500;color:var(--text);letter-spacing:-.01em}
+.sb-logo p{font-size:9px;color:var(--text3);letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
+.sb-nav{padding:10px 8px}
+.sb-nav-item{padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s;margin-bottom:1px;display:flex;align-items:center;gap:8px}
+.sb-nav-item:hover{background:var(--bg3);color:var(--text)}
+.sb-nav-item.active{background:var(--bg3);color:var(--text)}
+.sb-nav-icon{width:14px;text-align:center;opacity:.6}
+.sb-divider{height:1px;background:var(--border);margin:8px 8px}
+.sb-unit-list{padding:0 8px}
+.sb-unit{padding:10px 12px;border-radius:6px;cursor:pointer;margin-bottom:2px;display:flex;align-items:center;gap:8px;transition:all .15s}
+.sb-unit:hover{background:var(--bg3)}
+.sb-unit.sel{background:var(--bg3);outline:1px solid var(--border2)}
 .udot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .udot.ok,.udot.none{background:var(--ok)}
 .udot.warning{background:var(--warn)}
-.udot.critical{background:var(--crit);animation:pulse 1.5s infinite}
+.udot.critical{background:var(--crit);animation:blink 1.2s infinite}
 .udot.offline{background:var(--off)}
 .udot.snoozed{background:var(--snooze)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.sb-unit-name{font-size:12px;color:rgba(255,255,255,.72);flex:1;line-height:1.3}
-.sb-unit-temp{font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,.9);flex-shrink:0}
-.sb-foot{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:rgba(255,255,255,.22)}
-.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-right:5px;animation:pulse 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.sb-unit-name{font-size:11px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-unit-temp{font-family:'DM Mono',monospace;font-size:11px;color:var(--text);flex-shrink:0}
+.sb-foot{margin-top:auto;padding:12px 18px;border-top:1px solid var(--border);font-size:10px;color:var(--text3)}
+.pulse{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ok);margin-right:4px;animation:blink 2s infinite}
 
-/* TOPBAR */
-.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
-.topbar{padding:0 24px;height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--card);flex-shrink:0}
-.topbar-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:500}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.tabs{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.tab{padding:6px 14px;font-size:11px;cursor:pointer;color:var(--text2);background:var(--card);border:none;transition:all .15s;font-family:'Inter',sans-serif}
-.tab:not(:first-child){border-left:1px solid var(--border)}
-.tab.active{background:var(--text);color:#fff}
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;background:var(--bg)}
+.topbar{height:52px;padding:0 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2)}
+.topbar-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:400;color:var(--text)}
+.tabs{display:flex;gap:2px;background:var(--bg3);border-radius:7px;padding:3px}
+.tab{padding:5px 14px;font-size:11px;cursor:pointer;color:var(--text3);background:transparent;border:none;border-radius:5px;transition:all .15s;font-family:'Inter',sans-serif}
+.tab.active{background:var(--card);color:var(--text)}
 
-/* CONTENT */
-.content{flex:1;overflow-y:auto;padding:20px 24px}
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:16px 20px}
 
-/* STAT ROW */
-.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
-.stat-lbl{font-size:10px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
-.stat-val{font-size:22px;font-weight:500;font-family:'DM Mono',monospace}
-.stat-val.ok{color:var(--ok)}.stat-val.warn{color:var(--warn)}.stat-val.crit{color:var(--crit)}
+/* ── OVERVIEW ── */
+.overview-header{display:flex;gap:10px;margin-bottom:16px}
+.mini-stat{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.mini-stat-lbl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.mini-stat-val{font-size:20px;font-weight:500;font-family:'DM Mono',monospace;color:var(--text)}
+.mini-stat-val.ok{color:var(--ok)}.mini-stat-val.warn{color:var(--warn)}.mini-stat-val.crit{color:var(--crit)}
 
-/* UNIT CARDS */
-.unit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:20px}
-.ucard{background:var(--card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .2s}
-.ucard:hover{border-color:var(--text3)}
-.ucard.warning{border-color:var(--warn)}
-.ucard.critical{border-color:var(--crit)}
-.ucard.offline{opacity:.6}
-.ucard-head{padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:flex-start}
-.ucard-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:500;margin-bottom:2px}
-.ucard-loc{font-size:10px;color:var(--text3)}
-.ucard-right{text-align:right}
-.ucard-temp{font-family:'DM Mono',monospace;font-size:30px;font-weight:500;line-height:1}
+/* ── UNIT CARDS ── */
+.unit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.ucard{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .2s;position:relative}
+.ucard:hover{border-color:var(--border2);transform:translateY(-1px)}
+.ucard.warning{border-color:var(--warn-d)}
+.ucard.critical{border-color:var(--crit-d);box-shadow:0 0 0 1px var(--crit-d),0 4px 20px rgba(204,51,51,.15)}
+.ucard-status-bar{height:3px;width:100%}
+.ucard-status-bar.ok{background:var(--ok)}
+.ucard-status-bar.warning{background:var(--warn)}
+.ucard-status-bar.critical{background:var(--crit);animation:blink 1.5s infinite}
+.ucard-status-bar.offline{background:var(--off)}
+.ucard-status-bar.snoozed{background:var(--snooze)}
+.ucard-body{padding:14px 16px}
+.ucard-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.ucard-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:500;color:var(--text);line-height:1.2}
+.ucard-loc{font-size:10px;color:var(--text3);margin-top:2px}
+.ucard-temp{font-family:'DM Mono',monospace;font-size:34px;font-weight:300;line-height:1;text-align:right}
 .ucard-temp.ok,.ucard-temp.none{color:var(--ok)}
 .ucard-temp.warning{color:var(--warn)}
 .ucard-temp.critical{color:var(--crit)}
 .ucard-temp.offline{color:var(--off)}
 .ucard-temp.snoozed{color:var(--snooze)}
-.badge{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:500;letter-spacing:.06em;display:inline-block;margin-top:4px}
+.ucard-trend{font-size:10px;color:var(--text3);text-align:right;margin-top:2px}
+.trend-up{color:var(--crit)}.trend-down{color:var(--ok)}.trend-flat{color:var(--text3)}
+.ucard-spark{height:44px;padding:0 0 4px}
+.ucard-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 16px 12px;border-top:1px solid var(--border)}
+.ucard-thresholds{font-size:9px;color:var(--text3)}
+.ucard-thresholds span{color:var(--text2)}
+.badge{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:500;letter-spacing:.05em}
 .badge.ok,.badge.none{background:var(--ok-bg);color:var(--ok)}
 .badge.warning{background:var(--warn-bg);color:var(--warn)}
-.badge.critical{background:var(--crit-bg);color:var(--crit);animation:pulse 1.5s infinite}
+.badge.critical{background:var(--crit-bg);color:var(--crit)}
 .badge.offline{background:var(--off-bg);color:var(--off)}
 .badge.snoozed{background:var(--snooze-bg);color:var(--snooze)}
-.ucard-spark{padding:0 16px;height:54px}
-.ucard-foot{padding:8px 16px 12px;display:flex;justify-content:space-between;font-size:10px;color:var(--text3)}
-.ucard-controls{padding:0 16px 12px;display:flex;gap:6px}
-.cbtn{padding:5px 12px;border-radius:5px;border:1px solid var(--border);font-size:10px;cursor:pointer;background:var(--card);color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s}
-.cbtn:hover{border-color:var(--text3);color:var(--text)}
-.cbtn.amber{border-color:#FAC775;color:#854F0B;background:#FAEEDA}
-.cbtn.blue{border-color:#93C5FD;color:#1D4ED8;background:#EFF6FF}
+.ucard-controls{display:flex;gap:6px;padding:0 16px 12px}
+.cbtn{padding:5px 11px;border-radius:5px;border:1px solid var(--border);font-size:10px;cursor:pointer;background:transparent;color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s}
+.cbtn:hover{border-color:var(--border2);color:var(--text)}
+.cbtn.amber{border-color:var(--warn-d);color:var(--warn);background:var(--warn-bg)}
+.cbtn.blue{border-color:var(--snooze);color:var(--snooze);background:var(--snooze-bg)}
 
-/* DETAIL PANEL */
-.detail{display:none}
-.detail.show{display:block}
-.detail-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-.back-btn{font-size:12px;color:var(--text3);cursor:pointer;padding:5px 0;display:flex;align-items:center;gap:4px}
-.back-btn:hover{color:var(--text)}
-.detail-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:500}
-.detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+/* ── DETAIL ── */
+.detail-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.back{font-size:11px;color:var(--text3);cursor:pointer;padding:5px 0}
+.back:hover{color:var(--text)}
+.detail-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:400}
+.detail-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .dstat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
-.dstat-lbl{font-size:10px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
-.dstat-val{font-family:'DM Mono',monospace;font-size:24px;font-weight:500}
-.chart-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
-.chart-title{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-.chart-wrap{height:180px}
-.ctrl-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
-.ctrl-title{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+.dstat-lbl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.dstat-val{font-family:'DM Mono',monospace;font-size:26px;font-weight:300}
+.dstat-val.ok{color:var(--ok)}.dstat-val.warning{color:var(--warn)}.dstat-val.critical{color:var(--crit)}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
+.chart-lbl{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;display:flex;justify-content:space-between}
+.chart-wrap{height:160px}
+.ctrl-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
+.ctrl-lbl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
 .ctrl-row{display:flex;gap:8px;flex-wrap:wrap}
-.ctrl-btn{padding:8px 16px;border-radius:6px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--card);color:var(--text);font-family:'Inter',sans-serif;transition:all .15s}
-.ctrl-btn:hover{border-color:var(--text3);background:var(--bg)}
-.ctrl-btn.amber{border-color:#FAC775;color:#854F0B;background:#FAEEDA}
-.ctrl-btn.blue{border-color:#93C5FD;color:#1D4ED8;background:#EFF6FF}
-.ctrl-btn.red{border-color:#FCA5A5;color:var(--crit);background:var(--crit-bg)}
-
-/* LOG TABLE */
-.log-table{width:100%;border-collapse:collapse;font-size:12px}
-.log-table th{text-align:left;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.07em;color:var(--text3);text-transform:uppercase;font-weight:500}
-.log-table td{padding:8px 12px;border-bottom:1px solid var(--border2)}
-.log-table tr:last-child td{border-bottom:none}
-.log-table tr:hover td{background:var(--bg)}
-.log-table .tok{color:var(--ok);font-family:'DM Mono',monospace}
-.log-table .twarn{color:var(--warn);font-family:'DM Mono',monospace}
-.log-table .tcrit{color:var(--crit);font-family:'DM Mono',monospace}
+.ctrl-btn{padding:8px 16px;border-radius:6px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:transparent;color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s}
+.ctrl-btn:hover{border-color:var(--border2);color:var(--text)}
+.ctrl-btn.amber{border-color:var(--warn-d);color:var(--warn);background:var(--warn-bg)}
+.ctrl-btn.blue{border-color:var(--snooze);color:var(--snooze);background:var(--snooze-bg)}
+.ctrl-btn.red{border-color:var(--crit-d);color:var(--crit);background:var(--crit-bg)}
+.ctrl-btn.green{border-color:var(--ok-d);color:var(--ok);background:var(--ok-bg)}
+.ctrl-note{font-size:10px;color:var(--text3);margin-top:10px}
+.recent-table{width:100%;border-collapse:collapse;font-size:11px}
+.recent-table th{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);font-size:9px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-weight:400}
+.recent-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
+.recent-table tr:last-child td{border:none}
+.recent-table tr:hover td{background:var(--bg3)}
+.tok{color:var(--ok);font-family:'DM Mono',monospace}
+.twarn{color:var(--warn);font-family:'DM Mono',monospace}
+.tcrit{color:var(--crit);font-family:'DM Mono',monospace}
 .tbl-card{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
 
-/* HACCP TAB */
-.haccp-filter{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-.haccp-filter select,.haccp-filter input{padding:7px 11px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--card);color:var(--text);font-family:'Inter',sans-serif}
-.haccp-filter button{padding:7px 14px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:var(--card);color:var(--text);font-family:'Inter',sans-serif}
-.haccp-filter button:hover{background:var(--bg)}
+/* ── HACCP ── */
+.hfilter{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.hfilter select,.hfilter input{padding:7px 11px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--card);color:var(--text);font-family:'Inter',sans-serif}
+.hfilter button{padding:7px 14px;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:var(--card);color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s}
+.hfilter button:hover{color:var(--text);border-color:var(--border2)}
+.hsum{font-size:10px;color:var(--text3);margin-bottom:12px}
 
+/* ── EDIT MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(4px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:28px;width:400px;max-width:90vw}
+.modal h3{font-family:'Playfair Display',serif;font-size:18px;margin-bottom:16px;color:var(--text)}
+.mf{margin-bottom:13px}
+.mf label{display:block;font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.mf input{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text)}
+.mf input:focus{outline:none;border-color:var(--accent)}
+.mf-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.m-btns{display:flex;gap:8px;margin-top:18px}
+.m-save{flex:1;padding:9px;border-radius:6px;background:var(--accent);color:var(--bg);border:none;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:500}
+.m-cancel{padding:9px 16px;border-radius:6px;border:1px solid var(--border);background:transparent;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;color:var(--text2)}
+.m-status{font-size:10px;margin-top:8px;text-align:center;min-height:14px}
 
-/* EDIT MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(28,26,23,.7);display:none;align-items:center;justify-content:center;z-index:500}
-.modal-overlay.show{display:flex}
-.modal{background:var(--card);border-radius:10px;padding:28px;width:420px;max-width:90vw}
-.modal h3{font-family:"Playfair Display",serif;font-size:18px;margin-bottom:16px}
-.modal-field{margin-bottom:14px}
-.modal-field label{display:block;font-size:10px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px}
-.modal-field input{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:"DM Mono",monospace;background:var(--bg)}
-.modal-field input:focus{outline:none;border-color:var(--text)}
-.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal-btns{display:flex;gap:8px;margin-top:20px}
-.modal-save{flex:1;padding:9px;border-radius:6px;background:var(--text);color:#fff;border:none;font-size:13px;cursor:pointer;font-family:"Inter",sans-serif}
-.modal-save:hover{background:#333}
-.modal-cancel{padding:9px 18px;border-radius:6px;border:1px solid var(--border);background:var(--card);font-size:13px;cursor:pointer;font-family:"Inter",sans-serif}
-.modal-status{font-size:11px;color:var(--ok);margin-top:8px;text-align:center;min-height:16px}
-
-/* SETUP */
-.overlay{position:fixed;inset:0;background:rgba(28,26,23,.88);display:flex;align-items:center;justify-content:center;z-index:999}
-.setup-box{background:var(--card);border-radius:12px;padding:32px;width:460px;max-width:90vw}
-.setup-box h2{font-family:'Playfair Display',serif;font-size:21px;margin-bottom:5px}
-.setup-box p{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.5}
-.sf{margin-bottom:13px}
-.sf label{display:block;font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
-.sf input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;background:var(--bg)}
-.sf input:focus{outline:none;border-color:var(--text)}
-.setup-btn{width:100%;padding:11px;border-radius:6px;background:var(--text);color:#fff;border:none;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;margin-top:4px;font-weight:500}
-.setup-btn:hover{background:#333}
-.setup-note{font-size:10px;color:var(--text3);margin-top:10px;text-align:center}
-.setup-err{font-size:11px;color:var(--crit);margin-top:8px;text-align:center;display:none}
-
-/* EMPTY STATE */
-.empty{text-align:center;padding:48px 20px;color:var(--text3);font-size:13px}
-.empty-icon{font-size:32px;margin-bottom:12px}
+/* ── EMPTY ── */
+.empty{text-align:center;padding:48px 20px;color:var(--text3);font-size:12px}
 </style>
 </head>
 <body>
-
-<!-- SETUP OVERLAY -->
-<div class="overlay" id="setup-overlay">
-  <div class="setup-box">
-    <h2>Digby's TMS</h2>
-    <p>Connect to your Supabase project to start monitoring. You'll only need to do this once per browser.</p>
-    <div class="sf">
-      <label>Supabase URL</label>
-      <input id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co">
-    </div>
-    <div class="sf">
-      <label>Supabase Anon Key</label>
-      <input id="sb-key" placeholder="eyJhbGci…">
-    </div>
-    <button class="setup-btn" onclick="initSupabase()">Connect dashboard</button>
-    <div class="setup-err" id="setup-err">Connection failed — check your URL and key</div>
-    <p class="setup-note">Saved in this browser. Clear site data to re-enter.</p>
-  </div>
-</div>
 
 <!-- SIDEBAR -->
 <div class="sb">
   <div class="sb-logo">
     <h1>Digby's TMS</h1>
-    <p>Temperature Monitoring</p>
+    <p>Temperature Monitor</p>
   </div>
-  <div class="sb-sec">
-    <div class="sb-sec-lbl">Units</div>
-    <div id="sb-units">
-      <div class="empty" style="padding:20px;font-size:11px;color:rgba(255,255,255,.2)">Loading…</div>
+  <div class="sb-nav">
+    <div class="sb-nav-item active" onclick="setTab('overview')" id="nav-overview">
+      <span class="sb-nav-icon">◻</span> Dashboard
+    </div>
+    <div class="sb-nav-item" onclick="setTab('haccp')" id="nav-haccp">
+      <span class="sb-nav-icon">◻</span> HACCP Log
     </div>
   </div>
+  <div class="sb-divider"></div>
+  <div style="padding:0 8px 6px;font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding:8px 20px 4px">Units</div>
+  <div class="sb-unit-list" id="sb-units"></div>
   <div class="sb-foot">
-    <div><span class="live-dot"></span><span id="sb-status">connecting</span></div>
+    <div><span class="pulse"></span><span id="sb-status">connecting</span></div>
     <div style="margin-top:3px" id="sb-clock"></div>
   </div>
 </div>
@@ -331,88 +203,71 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="topbar-title">Overview</div>
-    <div class="topbar-right">
-      <div class="tabs">
-        <button class="tab active" onclick="setTab('overview')">Dashboard</button>
-        <button class="tab" onclick="setTab('detail')">Unit detail</button>
-        <button class="tab" onclick="setTab('haccp')">HACCP log</button>
-      </div>
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('overview')">Dashboard</button>
+      <button class="tab" onclick="setTab('detail')">Unit detail</button>
+      <button class="tab" onclick="setTab('haccp')">HACCP log</button>
     </div>
   </div>
 
   <div class="content">
 
-    <!-- DASHBOARD TAB -->
+    <!-- OVERVIEW -->
     <div id="tab-overview">
-      <div class="stat-row" id="stat-row">
-        <div class="stat-card"><div class="stat-lbl">Online</div><div class="stat-val" id="s-online">—</div></div>
-        <div class="stat-card"><div class="stat-lbl">Alerts</div><div class="stat-val" id="s-alerts">—</div></div>
-        <div class="stat-card"><div class="stat-lbl">Snoozed</div><div class="stat-val" id="s-snooze">—</div></div>
-        <div class="stat-card"><div class="stat-lbl">Last reading</div><div class="stat-val" style="font-size:14px" id="s-last">—</div></div>
-      </div>
+      <div class="overview-header" id="overview-stats"></div>
       <div class="unit-grid" id="unit-grid"></div>
     </div>
 
-    <!-- DETAIL TAB -->
-    <div id="tab-detail" style="display:none" class="detail" id="detail-panel">
+    <!-- DETAIL -->
+    <div id="tab-detail" style="display:none">
       <div class="detail-head">
-        <div class="back-btn" onclick="setTab('overview')">← Back</div>
-        <div class="detail-title" id="detail-name">Select a unit</div>
-        <span class="badge" id="detail-badge"></span>
+        <div class="back" onclick="setTab('overview')">← Overview</div>
+        <div class="detail-title" id="d-title">—</div>
+        <span class="badge" id="d-badge"></span>
       </div>
-      <div class="detail-grid">
-        <div class="dstat"><div class="dstat-lbl">Current temp</div><div class="dstat-val" id="d-temp">—</div></div>
-        <div class="dstat"><div class="dstat-lbl">Warning</div><div class="dstat-val" style="color:var(--warn)" id="d-warn">—</div></div>
-        <div class="dstat"><div class="dstat-lbl">Critical</div><div class="dstat-val" style="color:var(--crit)" id="d-crit">—</div></div>
-        <div class="dstat"><div class="dstat-lbl">Last reading</div><div class="dstat-val" style="font-size:14px" id="d-last">—</div></div>
-        <div class="dstat"><div class="dstat-lbl">Min (24hr)</div><div class="dstat-val" id="d-min">—</div></div>
-        <div class="dstat"><div class="dstat-lbl">Max (24hr)</div><div class="dstat-val" id="d-max">—</div></div>
+      <div class="detail-stats">
+        <div class="dstat"><div class="dstat-lbl">Current</div><div class="dstat-val" id="d-temp">—</div></div>
+        <div class="dstat"><div class="dstat-lbl">Warning at</div><div class="dstat-val" style="color:var(--warn)" id="d-warn">—</div></div>
+        <div class="dstat"><div class="dstat-lbl">Critical at</div><div class="dstat-val" style="color:var(--crit)" id="d-crit">—</div></div>
+        <div class="dstat"><div class="dstat-lbl">Last reading</div><div class="dstat-val" style="font-size:14px;padding-top:6px" id="d-last">—</div></div>
+        <div class="dstat"><div class="dstat-lbl">Min 24hr</div><div class="dstat-val" id="d-min">—</div></div>
+        <div class="dstat"><div class="dstat-lbl">Max 24hr</div><div class="dstat-val" id="d-max">—</div></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">
-          <span>24hr temperature</span>
-          <span style="font-size:10px;color:var(--text3)" id="d-range"></span>
-        </div>
-        <div class="chart-wrap"><canvas id="detail-chart"></canvas></div>
+        <div class="chart-lbl"><span>24hr temperature history</span><span id="d-range" style="color:var(--text3)"></span></div>
+        <div class="chart-wrap"><canvas id="d-chart"></canvas></div>
       </div>
       <div class="ctrl-card">
-        <div class="ctrl-title">Controls</div>
+        <div class="ctrl-lbl">Controls</div>
         <div class="ctrl-row">
-          <button class="ctrl-btn amber" id="btn-snooze" onclick="sendSnooze()">Snooze alarm — 1 hour</button>
-          <button class="ctrl-btn blue" id="btn-defrost" onclick="sendDefrost()">Enable defrost mode</button>
-          <button class="ctrl-btn red" onclick="sendSilence()">Silence alarm</button>
-          <button class="ctrl-btn" onclick="openEditModal()">Edit unit</button>
+          <button class="ctrl-btn amber" onclick="cmdSnooze()">+ 30 min snooze</button>
+          <button class="ctrl-btn red" onclick="cmdClearSnooze()">Clear snooze</button>
+          <button class="ctrl-btn blue" id="btn-defrost" onclick="cmdDefrost()">Enable defrost</button>
+          <button class="ctrl-btn" onclick="openEdit()">Edit unit</button>
         </div>
-        <div style="font-size:10px;color:var(--text3);margin-top:10px" id="cmd-status"></div>
+        <div class="ctrl-note" id="ctrl-note"></div>
       </div>
-      <div class="chart-card">
-        <div class="chart-title">Recent readings</div>
-        <div class="tbl-card" style="border:none">
-          <table class="log-table">
-            <thead><tr><th>Time</th><th>Temperature</th><th>Status</th><th>Snoozed</th></tr></thead>
-            <tbody id="detail-log"></tbody>
-          </table>
-        </div>
+      <div class="tbl-card">
+        <table class="recent-table">
+          <thead><tr><th>Time</th><th>Temperature</th><th>Status</th></tr></thead>
+          <tbody id="d-log"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- HACCP TAB -->
+    <!-- HACCP -->
     <div id="tab-haccp" style="display:none">
-      <div class="haccp-filter">
+      <div class="hfilter">
         <select id="h-unit"></select>
         <input type="date" id="h-date">
-        <button onclick="loadHACCP()">Load records</button>
-        <button onclick="exportCSV()" style="margin-left:4px">Export CSV ↓</button>
+        <button onclick="loadHACCP()">Load</button>
+        <button onclick="exportCSV()">Export CSV ↓</button>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:12px" id="h-summary"></div>
+      <div class="hsum" id="h-sum"></div>
       <div class="tbl-card">
-        <table class="log-table">
-          <thead>
-            <tr><th>Date</th><th>Time</th><th>Unit</th><th>Temperature</th><th>Status</th><th>Snoozed</th></tr>
-          </thead>
-          <tbody id="h-body">
-            <tr><td colspan="6" class="empty"><div class="empty-icon">📋</div>Select a unit and date above</td></tr>
-          </tbody>
+        <table class="recent-table">
+          <thead><tr><th>Date</th><th>Time</th><th>Unit</th><th>Temperature</th><th>Status</th><th>Snoozed</th></tr></thead>
+          <tbody id="h-body"><tr><td colspan="6" class="empty">Select a unit and date above</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -420,549 +275,368 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
   </div>
 </div>
 
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="edit-modal">
+  <div class="modal">
+    <h3>Edit unit</h3>
+    <div class="mf"><label>Name</label><input id="e-name" type="text"></div>
+    <div class="mf"><label>Location</label><input id="e-loc" type="text"></div>
+    <div class="mf-row">
+      <div class="mf"><label>Warning (°C)</label><input id="e-warn" type="number" step="0.5"></div>
+      <div class="mf"><label>Critical (°C)</label><input id="e-crit" type="number" step="0.5"></div>
+    </div>
+    <div class="m-btns">
+      <button class="m-cancel" onclick="closeEdit()">Cancel</button>
+      <button class="m-save" onclick="saveEdit()">Save</button>
+    </div>
+    <div class="m-status" id="e-status"></div>
+  </div>
+</div>
+
 <script>
-// ── GLOBALS ──
-let SB = null;
-let UNITS = {};
-let CHARTS = {};
-let activeTab = 'overview';
-let selectedUnit = null;
-let defrostActive = {};
+// ── CREDENTIALS ──
+const SB_URL = 'https://jaajrllkozknilvmdezt.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphYWpybGxrb3prbmlsdm1kZXp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMjQxNDAsImV4cCI6MjA5MjYwMDE0MH0.09U5cba3JxRmysrn2X3TxPqr-q6jJE4QhyeKQwEK03M';
 
-// ── SUPABASE INIT ──
-async function initSupabase() {
-  const url = document.getElementById('sb-url').value.trim();
-  const key = document.getElementById('sb-key').value.trim();
-  if (!url || !key) return;
-  try {
-    SB = window.supabase.createClient(url, key);
-    const { error } = await SB.from('units').select('id').limit(1);
-    if (error) throw error;
-    localStorage.setItem('tms_url', url);
-    localStorage.setItem('tms_key', key);
-    document.getElementById('setup-overlay').style.display = 'none';
-    boot();
-  } catch(e) {
-    document.getElementById('setup-err').style.display = 'block';
-    console.error(e);
-  }
-}
+// ── STATE ──
+let SB, UNITS = {}, SEL = null, CHARTS = {}, activeTab = 'overview', defrostState = {};
 
-async function boot() {
+// ── INIT ──
+window.addEventListener('load', async () => {
+  SB = window.supabase.createClient(SB_URL, SB_KEY);
   await loadUnits();
-  await loadLatest();
   subscribeRealtime();
-  populateHACCPSelect();
   setInterval(tick, 1000);
-  setInterval(loadLatest, 30000);
-}
+  setInterval(loadLatest, 60000);
+  document.getElementById('h-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('edit-modal').addEventListener('click', e => { if(e.target===document.getElementById('edit-modal')) closeEdit(); });
+});
 
-// ── UNITS ──
 async function loadUnits() {
-  const { data } = await SB.from('units').select('*').eq('active', true).order('name');
+  const {data} = await SB.from('units').select('*').eq('active',true).order('name');
   if (!data) return;
   data.forEach(u => {
-    UNITS[u.name] = {
-      ...u, temp: null, alert: 'offline',
-      snoozed: false, lastSeen: null, history: []
-    };
-    defrostActive[u.name] = false;
+    UNITS[u.name] = {...u, temp:null, alert:'offline', snoozed:false, lastSeen:null, history:[]};
+    defrostState[u.name] = false;
   });
-  renderSidebar();
-  renderGrid();
-  renderStats();
+  populateHACCP(data);
+  await loadLatest();
+  renderAll();
 }
 
 async function loadLatest() {
   const since = new Date(Date.now() - 90*60*1000).toISOString();
-  const { data } = await SB
-    .from('temperature_logs')
-    .select('*')
-    .gte('created_at', since)
-    .order('created_at', { ascending: true });
+  const {data} = await SB.from('temperature_logs').select('*').gte('created_at',since).order('created_at',{ascending:true});
   if (!data) return;
-  // Reset histories
   Object.keys(UNITS).forEach(n => { UNITS[n].history = []; });
   data.forEach(r => {
     if (!UNITS[r.unit_name]) return;
-    UNITS[r.unit_name].temp = r.temp;
-    UNITS[r.unit_name].alert = r.alert;
-    UNITS[r.unit_name].snoozed = r.snoozed;
-    UNITS[r.unit_name].lastSeen = r.created_at;
-    UNITS[r.unit_name].history.push({ t: r.created_at, v: r.temp, a: r.alert });
+    const u = UNITS[r.unit_name];
+    u.temp = r.temp; u.alert = r.alert; u.snoozed = r.snoozed; u.lastSeen = r.created_at;
+    u.history.push({t:r.created_at, v:r.temp, a:r.alert});
   });
   document.getElementById('sb-status').textContent = 'live';
   renderAll();
 }
 
-// ── REALTIME ──
 function subscribeRealtime() {
-  SB.channel('tms-live')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'temperature_logs' }, p => {
-      const r = p.new;
-      if (!UNITS[r.unit_name]) return;
-      const u = UNITS[r.unit_name];
-      u.temp = r.temp; u.alert = r.alert;
-      u.snoozed = r.snoozed; u.lastSeen = r.created_at;
-      u.history.push({ t: r.created_at, v: r.temp, a: r.alert });
-      if (u.history.length > 90) u.history.shift();
-      document.getElementById('sb-status').textContent = 'live · ' + new Date(r.created_at).toLocaleTimeString('en-GB');
-      renderAll();
-      if (selectedUnit === r.unit_name && activeTab === 'detail') updateDetailLive(r);
-    })
-    .subscribe();
+  SB.channel('tms').on('postgres_changes',{event:'INSERT',schema:'public',table:'temperature_logs'}, p => {
+    const r = p.new;
+    if (!UNITS[r.unit_name]) return;
+    const u = UNITS[r.unit_name];
+    u.temp=r.temp; u.alert=r.alert; u.snoozed=r.snoozed; u.lastSeen=r.created_at;
+    u.history.push({t:r.created_at,v:r.temp,a:r.alert});
+    if(u.history.length>90) u.history.shift();
+    document.getElementById('sb-status').textContent = 'live · ' + new Date(r.created_at).toLocaleTimeString('en-GB');
+    renderAll();
+    if(SEL===r.unit_name && activeTab==='detail') liveUpdateDetail(r);
+  }).subscribe();
 }
 
-// ── RENDER ALL ──
+// ── STATUS ──
+function st(u) {
+  if (!u.lastSeen) return 'offline';
+  if ((Date.now()-new Date(u.lastSeen))/60000 > 5) return 'offline';
+  if (u.snoozed) return 'snoozed';
+  return u.alert||'ok';
+}
+function stLabel(s){return{ok:'NOMINAL',none:'NOMINAL',warning:'WARNING',critical:'CRITICAL',offline:'OFFLINE',snoozed:'SNOOZED'}[s]||s.toUpperCase()}
+function stColor(s){return{ok:'ok',none:'ok',warning:'warning',critical:'critical',offline:'offline',snoozed:'snoozed'}[s]||'ok'}
+function fT(t){return t!==null&&t!==undefined?t.toFixed(1)+'°C':'—'}
+function ago(iso){
+  if(!iso) return 'never';
+  const s=Math.floor((Date.now()-new Date(iso))/1000);
+  if(s<10) return 'just now';
+  if(s<60) return s+'s ago';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  return Math.floor(s/3600)+'h ago';
+}
+function trend(u) {
+  const h = u.history; if(h.length<3) return '';
+  const recent = h.slice(-3).map(p=>p.v).filter(v=>v!==null);
+  if(recent.length<2) return '';
+  const diff = recent[recent.length-1] - recent[0];
+  if(Math.abs(diff)<0.3) return '<span class="trend-flat">→</span>';
+  return diff>0 ? '<span class="trend-up">↑</span>' : '<span class="trend-down">↓</span>';
+}
+
+// ── RENDER ──
 function renderAll() {
-  renderSidebar();
-  renderStats();
-  if (activeTab === 'overview') renderGrid();
-  if (activeTab === 'detail' && selectedUnit) renderDetailFull();
+  renderSidebar(); renderStats();
+  if(activeTab==='overview') renderGrid();
+  if(activeTab==='detail' && SEL) renderDetailFull();
 }
 
-// ── SIDEBAR ──
 function renderSidebar() {
   const el = document.getElementById('sb-units');
   el.innerHTML = '';
   Object.values(UNITS).forEach(u => {
-    const st = status(u);
-    const div = document.createElement('div');
-    div.className = 'sb-unit' + (selectedUnit === u.name ? ' active' : '');
-    div.onclick = () => { selectUnit(u.name); setTab('detail'); };
-    div.innerHTML = `
-      <div class="udot ${st}"></div>
-      <div class="sb-unit-name">${u.name}</div>
-      <div class="sb-unit-temp">${fTemp(u.temp)}</div>
-    `;
-    el.appendChild(div);
+    const s = st(u);
+    const d = document.createElement('div');
+    d.className = 'sb-unit'+(SEL===u.name?' sel':'');
+    d.onclick = () => { SEL=u.name; setTab('detail'); };
+    d.innerHTML = `<div class="udot ${s}"></div><div class="sb-unit-name">${u.name}</div><div class="sb-unit-temp">${u.temp!==null?u.temp.toFixed(1)+'°':'—'}</div>`;
+    el.appendChild(d);
   });
 }
 
-// ── STATS ──
 function renderStats() {
   const all = Object.values(UNITS);
-  const online = all.filter(u => status(u) !== 'offline').length;
-  const alerts = all.filter(u => u.alert === 'critical' || u.alert === 'warning').length;
-  const snz    = all.filter(u => u.snoozed).length;
-  const last   = all.map(u => u.lastSeen).filter(Boolean).sort().pop();
-  document.getElementById('s-online').textContent  = online + '/' + all.length;
-  document.getElementById('s-online').className    = 'stat-val ' + (online === all.length ? 'ok' : 'warn');
-  document.getElementById('s-alerts').textContent  = alerts;
-  document.getElementById('s-alerts').className    = 'stat-val ' + (alerts === 0 ? 'ok' : alerts > 0 ? 'crit' : '');
-  document.getElementById('s-snooze').textContent  = snz;
-  document.getElementById('s-last').textContent    = last ? timeAgo(last) : '—';
+  const online = all.filter(u=>st(u)!=='offline').length;
+  const crits  = all.filter(u=>u.alert==='critical'&&!u.snoozed).length;
+  const warns  = all.filter(u=>u.alert==='warning'&&!u.snoozed).length;
+  const snzd   = all.filter(u=>u.snoozed).length;
+  document.getElementById('overview-stats').innerHTML = `
+    <div class="mini-stat"><div class="mini-stat-lbl">Online</div><div class="mini-stat-val ${online===all.length?'ok':''}">${online}/${all.length}</div></div>
+    <div class="mini-stat"><div class="mini-stat-lbl">Critical alerts</div><div class="mini-stat-val ${crits>0?'crit':''}">${crits}</div></div>
+    <div class="mini-stat"><div class="mini-stat-lbl">Warnings</div><div class="mini-stat-val ${warns>0?'warn':''}">${warns}</div></div>
+    <div class="mini-stat"><div class="mini-stat-lbl">Snoozed</div><div class="mini-stat-val">${snzd}</div></div>
+  `;
 }
 
-// ── GRID ──
 function renderGrid() {
   const grid = document.getElementById('unit-grid');
   Object.values(UNITS).forEach(u => {
-    const st = status(u);
-    let card = document.getElementById('uc-' + slug(u.name));
-    if (!card) {
-      card = document.createElement('div');
-      card.id = 'uc-' + slug(u.name);
-      card.className = 'ucard';
-      card.onclick = () => { selectUnit(u.name); setTab('detail'); };
-      grid.appendChild(card);
-    }
-    card.className = 'ucard ' + (st === 'none' ? 'ok' : st);
-    const tdClass = st === 'none' ? 'ok' : st;
-    const hist = u.history;
+    const s = st(u); const sc = stColor(s);
+    let card = document.getElementById('uc-'+slug(u.name));
+    if(!card){card=document.createElement('div');card.id='uc-'+slug(u.name);grid.appendChild(card);}
+    card.className = 'ucard '+sc;
+    card.onclick = ()=>{SEL=u.name;setTab('detail');};
     card.innerHTML = `
-      <div class="ucard-head">
-        <div>
-          <div class="ucard-name">${u.name}</div>
-          <div class="ucard-loc">${u.location || ''}</div>
+      <div class="ucard-status-bar ${sc}"></div>
+      <div class="ucard-body">
+        <div class="ucard-row">
+          <div><div class="ucard-name">${u.name}</div><div class="ucard-loc">${u.location||''}</div></div>
+          <div><div class="ucard-temp ${sc}">${fT(u.temp)}</div><div class="ucard-trend">${trend(u)}</div></div>
         </div>
-        <div class="ucard-right">
-          <div class="ucard-temp ${tdClass}">${fTemp(u.temp)}</div>
-          <span class="badge ${tdClass}">${statusLabel(st)}</span>
-        </div>
+        <div class="ucard-spark"><canvas id="sp-${slug(u.name)}" height="40"></canvas></div>
       </div>
-      <div class="ucard-spark"><canvas id="sp-${slug(u.name)}" style="width:100%;height:48px"></canvas></div>
       <div class="ucard-foot">
-        <span>Warn ${u.warn_temp}° · Crit ${u.critical_temp}°</span>
-        <span>${timeAgo(u.lastSeen)}</span>
+        <div class="ucard-thresholds">W <span>${u.warn_temp}°</span> · C <span>${u.critical_temp}°</span> · <span>${ago(u.lastSeen)}</span></div>
+        <span class="badge ${sc}">${stLabel(s)}</span>
       </div>
       <div class="ucard-controls">
-        <button class="cbtn amber" onclick="event.stopPropagation();quickSnooze('${u.name}')">Snooze 1hr</button>
-        <button class="cbtn blue" onclick="event.stopPropagation();quickDefrost('${u.name}')">Defrost</button>
+        <button class="cbtn amber" onclick="event.stopPropagation();qSnooze('${u.name}')">+ Snooze</button>
+        <button class="cbtn blue" onclick="event.stopPropagation();qDefrost('${u.name}')">Defrost</button>
       </div>
     `;
-    setTimeout(() => drawSparkline(u.name), 30);
+    setTimeout(()=>drawSpark(u.name),30);
   });
 }
 
-function drawSparkline(name) {
-  const u = UNITS[name];
-  const id = 'sp-' + slug(name);
-  const canvas = document.getElementById(id);
-  if (!canvas) return;
-  const st = status(u);
-  const color = { ok:'#3B6D11', none:'#3B6D11', warning:'#BA7517', critical:'#A32D2D', offline:'#9a8f82', snoozed:'#185FA5' }[st] || '#3B6D11';
-  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
-  const pts = u.history.slice(-30);
-  if (!pts.length) return;
-  CHARTS[id] = new Chart(canvas, {
-    type: 'line',
-    data: {
-      labels: pts.map(() => ''),
-      datasets: [{
-        data: pts.map(p => p.v),
-        borderColor: color, borderWidth: 1.5,
-        pointRadius: 0, tension: 0.3, fill: true,
-        backgroundColor: color + '18'
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, animation: false,
-      plugins: { legend: { display: false }, tooltip: { enabled: false } },
-      scales: { x: { display: false }, y: { display: false } }
-    }
+function drawSpark(name) {
+  const u=UNITS[name]; if(!u) return;
+  const id='sp-'+slug(name);
+  const canvas=document.getElementById(id); if(!canvas) return;
+  const s=st(u);
+  const c={ok:'#4a8c1c',none:'#4a8c1c',warning:'#c4821a',critical:'#cc3333',offline:'#4a4540',snoozed:'#2a6abf'}[s]||'#4a8c1c';
+  if(CHARTS[id]){CHARTS[id].destroy();delete CHARTS[id];}
+  const pts=u.history.slice(-30); if(!pts.length) return;
+  CHARTS[id]=new Chart(canvas,{
+    type:'line',
+    data:{labels:pts.map(()=>''),datasets:[{data:pts.map(p=>p.v),borderColor:c,borderWidth:1.5,pointRadius:0,tension:0.3,fill:true,backgroundColor:c+'20'}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}
   });
 }
 
 // ── DETAIL ──
 function renderDetailFull() {
-  if (!selectedUnit) return;
-  const u = UNITS[selectedUnit];
-  const st = status(u);
-  const stc = st === 'none' ? 'ok' : st;
-  document.getElementById('detail-name').textContent = u.name;
-  document.getElementById('detail-badge').textContent = statusLabel(st);
-  document.getElementById('detail-badge').className = 'badge ' + stc;
-  document.getElementById('d-temp').textContent = fTemp(u.temp);
-  document.getElementById('d-temp').className   = 'dstat-val ' + stc;
-  document.getElementById('d-warn').textContent = u.warn_temp + '°C';
-  document.getElementById('d-crit').textContent = u.critical_temp + '°C';
-  document.getElementById('d-last').textContent = u.lastSeen ? new Date(u.lastSeen).toLocaleTimeString('en-GB') : '—';
-  const temps = u.history.map(p => p.v).filter(v => v !== null);
-  document.getElementById('d-min').textContent = temps.length ? Math.min(...temps).toFixed(1) + '°C' : '—';
-  document.getElementById('d-max').textContent = temps.length ? Math.max(...temps).toFixed(1) + '°C' : '—';
-  // Chart
-  drawDetailChart(u);
-  // Log
+  if(!SEL||!UNITS[SEL]) return;
+  const u=UNITS[SEL]; const s=st(u); const sc=stColor(s);
+  document.getElementById('d-title').textContent=u.name;
+  document.getElementById('d-badge').textContent=stLabel(s);
+  document.getElementById('d-badge').className='badge '+sc;
+  document.getElementById('d-temp').textContent=fT(u.temp);
+  document.getElementById('d-temp').className='dstat-val '+sc;
+  document.getElementById('d-warn').textContent=u.warn_temp+'°C';
+  document.getElementById('d-crit').textContent=u.critical_temp+'°C';
+  document.getElementById('d-last').textContent=u.lastSeen?new Date(u.lastSeen).toLocaleTimeString('en-GB'):'—';
+  const vals=u.history.map(p=>p.v).filter(v=>v!==null);
+  document.getElementById('d-min').textContent=vals.length?Math.min(...vals).toFixed(1)+'°C':'—';
+  document.getElementById('d-max').textContent=vals.length?Math.max(...vals).toFixed(1)+'°C':'—';
+  document.getElementById('btn-defrost').textContent=defrostState[SEL]?'Disable defrost':'Enable defrost';
+  drawDetailChart(u,s,sc);
   renderDetailLog(u);
 }
 
-function drawDetailChart(u) {
-  const canvas = document.getElementById('detail-chart');
-  if (!canvas) return;
-  if (CHARTS['detail']) { CHARTS['detail'].destroy(); }
-  const pts = u.history.slice(-60);
-  if (!pts.length) return;
-  const st = status(u);
-  const color = { ok:'#3B6D11', none:'#3B6D11', warning:'#BA7517', critical:'#A32D2D', offline:'#9a8f82' }[st] || '#3B6D11';
-  CHARTS['detail'] = new Chart(canvas, {
-    type: 'line',
-    data: {
-      labels: pts.map(p => new Date(p.t).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })),
-      datasets: [
-        {
-          label: 'Temperature',
-          data: pts.map(p => p.v),
-          borderColor: color, borderWidth: 2,
-          pointRadius: 0, tension: 0.3,
-          fill: true, backgroundColor: color + '18'
-        },
-        {
-          label: 'Warning',
-          data: pts.map(() => u.warn_temp),
-          borderColor: '#BA7517', borderWidth: 1,
-          borderDash: [4, 4], pointRadius: 0, fill: false
-        },
-        {
-          label: 'Critical',
-          data: pts.map(() => u.critical_temp),
-          borderColor: '#A32D2D', borderWidth: 1,
-          borderDash: [4, 4], pointRadius: 0, fill: false
-        }
+function drawDetailChart(u,s,sc) {
+  const canvas=document.getElementById('d-chart'); if(!canvas) return;
+  if(CHARTS['detail']){CHARTS['detail'].destroy();}
+  const pts=u.history.slice(-60); if(!pts.length) return;
+  const c={ok:'#4a8c1c',none:'#4a8c1c',warning:'#c4821a',critical:'#cc3333',offline:'#4a4540',snoozed:'#2a6abf'}[sc]||'#4a8c1c';
+  CHARTS['detail']=new Chart(canvas,{
+    type:'line',
+    data:{
+      labels:pts.map(p=>new Date(p.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})),
+      datasets:[
+        {label:'Temperature',data:pts.map(p=>p.v),borderColor:c,borderWidth:2,pointRadius:0,tension:0.3,fill:true,backgroundColor:c+'15'},
+        {label:'Warning',data:pts.map(()=>u.warn_temp),borderColor:'#c4821a',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
+        {label:'Critical',data:pts.map(()=>u.critical_temp),borderColor:'#cc3333',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false}
       ]
     },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      animation: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + '°C'
-          }
-        }
-      },
-      scales: {
-        x: { ticks: { maxTicksLimit: 6, font: { size: 10 } }, grid: { color: '#f0ece6' } },
-        y: { ticks: { font: { size: 10 }, callback: v => v + '°' }, grid: { color: '#f0ece6' } }
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+'°C'}}},
+      scales:{
+        x:{ticks:{maxTicksLimit:6,font:{size:9},color:'#6b6254'},grid:{color:'#2e2b24'}},
+        y:{ticks:{font:{size:9},color:'#6b6254',callback:v=>v+'°'},grid:{color:'#2e2b24'}}
       }
     }
   });
 }
 
 function renderDetailLog(u) {
-  const tbody = document.getElementById('detail-log');
-  const recent = u.history.slice(-15).reverse();
-  if (!recent.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">No recent readings</td></tr>';
-    return;
-  }
-  tbody.innerHTML = recent.map(p => {
-    const a = p.a || 'none';
-    const tc = a === 'critical' ? 'tcrit' : a === 'warning' ? 'twarn' : 'tok';
-    return `<tr>
-      <td>${new Date(p.t).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</td>
-      <td class="${tc}">${p.v}°C</td>
-      <td><span class="badge ${a}">${statusLabel(a)}</span></td>
-      <td>—</td>
-    </tr>`;
+  const tbody=document.getElementById('d-log');
+  const recent=u.history.slice(-15).reverse();
+  if(!recent.length){tbody.innerHTML='<tr><td colspan="3" class="empty">No readings yet</td></tr>';return;}
+  tbody.innerHTML=recent.map(p=>{
+    const a=p.a||'none';
+    const tc=a==='critical'?'tcrit':a==='warning'?'twarn':'tok';
+    return `<tr><td>${new Date(p.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td><td class="${tc}">${p.v}°C</td><td><span class="badge ${a}">${stLabel(a)}</span></td></tr>`;
   }).join('');
 }
 
-function updateDetailLive(r) {
-  document.getElementById('d-temp').textContent = fTemp(r.temp);
-  const tbody = document.getElementById('detail-log');
-  const a = r.alert || 'none';
-  const tc = a === 'critical' ? 'tcrit' : a === 'warning' ? 'twarn' : 'tok';
-  const row = `<tr>
-    <td>${new Date(r.created_at).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</td>
-    <td class="${tc}">${r.temp}°C</td>
-    <td><span class="badge ${a}">${statusLabel(a)}</span></td>
-    <td>${r.snoozed ? 'Yes' : '—'}</td>
-  </tr>`;
-  tbody.insertAdjacentHTML('afterbegin', row);
+function liveUpdateDetail(r) {
+  document.getElementById('d-temp').textContent=fT(r.temp);
+  const a=r.alert||'none';
+  const sc=stColor(a);
+  document.getElementById('d-temp').className='dstat-val '+sc;
+  const tbody=document.getElementById('d-log');
+  const tc=a==='critical'?'tcrit':a==='warning'?'twarn':'tok';
+  tbody.insertAdjacentHTML('afterbegin',`<tr><td>${new Date(r.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td><td class="${tc}">${r.temp}°C</td><td><span class="badge ${a}">${stLabel(a)}</span></td></tr>`);
 }
 
 // ── COMMANDS ──
-async function sendCmd(unit, command, payload = {}) {
-  if (!SB) return;
-  await SB.from('commands').insert({ unit_name: unit, command, payload, executed: false });
-  document.getElementById('cmd-status').textContent = '✓ Command sent: ' + command + ' — Pi will execute within 30s';
-  setTimeout(() => { document.getElementById('cmd-status').textContent = ''; }, 5000);
+async function sendCmd(unit,command,payload={}) {
+  await SB.from('commands').insert({unit_name:unit,command,payload,executed:false});
+  document.getElementById('ctrl-note').textContent='✓ Command sent — Pi will relay to unit within 10 seconds';
+  setTimeout(()=>{document.getElementById('ctrl-note').textContent='';},6000);
 }
-
-function sendSnooze() { if (selectedUnit) sendCmd(selectedUnit, 'snooze', { minutes: 60 }); }
-function sendDefrost() {
-  if (!selectedUnit) return;
-  const active = defrostActive[selectedUnit];
-  defrostActive[selectedUnit] = !active;
-  document.getElementById('btn-defrost').textContent = active ? 'Enable defrost mode' : 'Disable defrost mode';
-  sendCmd(selectedUnit, active ? 'defrost_off' : 'defrost_on');
+function cmdSnooze(){if(SEL) sendCmd(SEL,'snooze',{minutes:30});}
+function cmdClearSnooze(){if(SEL) sendCmd(SEL,'silence');}
+function cmdDefrost(){
+  if(!SEL) return;
+  defrostState[SEL]=!defrostState[SEL];
+  sendCmd(SEL,defrostState[SEL]?'defrost_on':'defrost_off');
+  document.getElementById('btn-defrost').textContent=defrostState[SEL]?'Disable defrost':'Enable defrost';
 }
-function sendSilence() { if (selectedUnit) sendCmd(selectedUnit, 'silence'); }
-function quickSnooze(name) { sendCmd(name, 'snooze', { minutes: 60 }); }
-function quickDefrost(name) { sendCmd(name, 'defrost_on'); }
+function qSnooze(name){sendCmd(name,'snooze',{minutes:30});}
+function qDefrost(name){sendCmd(name,'defrost_on');}
 
-// ── HACCP ──
-function populateHACCPSelect() {
-  const sel = document.getElementById('h-unit');
-  sel.innerHTML = Object.keys(UNITS).map(n => `<option value="${n}">${n}</option>`).join('');
-  document.getElementById('h-date').value = new Date().toISOString().slice(0, 10);
+// ── EDIT MODAL ──
+function openEdit(){
+  if(!SEL||!UNITS[SEL]) return;
+  const u=UNITS[SEL];
+  document.getElementById('e-name').value=u.name;
+  document.getElementById('e-loc').value=u.location||'';
+  document.getElementById('e-warn').value=u.warn_temp;
+  document.getElementById('e-crit').value=u.critical_temp;
+  document.getElementById('e-status').textContent='';
+  document.getElementById('edit-modal').classList.add('show');
 }
-
-async function loadHACCP() {
-  const unit = document.getElementById('h-unit').value;
-  const date = document.getElementById('h-date').value;
-  if (!unit || !date) return;
-  const { data } = await SB
-    .from('temperature_logs')
-    .select('*')
-    .eq('unit_name', unit)
-    .gte('created_at', date + 'T00:00:00')
-    .lte('created_at', date + 'T23:59:59')
-    .order('created_at');
-  const tbody = document.getElementById('h-body');
-  const sum   = document.getElementById('h-summary');
-  if (!data || !data.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty"><div class="empty-icon">📋</div>No records found for this unit and date</td></tr>';
-    sum.textContent = '';
+function closeEdit(){document.getElementById('edit-modal').classList.remove('show');}
+async function saveEdit(){
+  const name=document.getElementById('e-name').value.trim();
+  const loc=document.getElementById('e-loc').value.trim();
+  const warn=parseFloat(document.getElementById('e-warn').value);
+  const crit=parseFloat(document.getElementById('e-crit').value);
+  if(!name||isNaN(warn)||isNaN(crit)){
+    document.getElementById('e-status').style.color='var(--crit)';
+    document.getElementById('e-status').textContent='Fill in all fields';
     return;
   }
-  const temps = data.map(r => r.temp).filter(v => v !== null);
-  const avg = temps.length ? (temps.reduce((a,b) => a+b, 0) / temps.length).toFixed(1) : '—';
-  const min = temps.length ? Math.min(...temps).toFixed(1) : '—';
-  const max = temps.length ? Math.max(...temps).toFixed(1) : '—';
-  sum.textContent = `${data.length} readings · Avg ${avg}°C · Min ${min}°C · Max ${max}°C`;
-  tbody.innerHTML = data.map(r => {
-    const d = new Date(r.created_at);
-    const a = r.alert || 'none';
-    const tc = a === 'critical' ? 'tcrit' : a === 'warning' ? 'twarn' : 'tok';
-    return `<tr>
-      <td>${d.toLocaleDateString('en-GB')}</td>
-      <td>${d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</td>
-      <td>${r.unit_name}</td>
-      <td class="${tc}">${r.temp}°C</td>
-      <td><span class="badge ${a}">${statusLabel(a)}</span></td>
-      <td>${r.snoozed ? 'Yes' : '—'}</td>
-    </tr>`;
-  }).join('');
+  const {error}=await SB.from('units').update({name,location:loc,warn_temp:warn,critical_temp:crit}).eq('name',SEL);
+  if(error){
+    document.getElementById('e-status').style.color='var(--crit)';
+    document.getElementById('e-status').textContent='Save failed';
+    return;
+  }
+  UNITS[name]={...UNITS[SEL],name,location:loc,warn_temp:warn,critical_temp:crit};
+  if(name!==SEL){delete UNITS[SEL];}
+  SEL=name;
+  document.getElementById('e-status').style.color='var(--ok)';
+  document.getElementById('e-status').textContent='✓ Saved — Pi will push new thresholds to node';
+  renderAll();
+  setTimeout(closeEdit,2000);
 }
 
-function exportCSV() {
-  const rows = [...document.querySelectorAll('#h-body tr')];
-  const lines = ['Date,Time,Unit,Temperature,Status,Snoozed'];
-  rows.forEach(r => {
-    const cells = [...r.querySelectorAll('td')];
-    if (cells.length < 6) return;
-    lines.push(cells.map(c => '"' + c.innerText.replace(/"/g,'""') + '"').join(','));
-  });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
-  a.download = 'haccp-' + document.getElementById('h-unit').value.replace(/\s+/g,'-').toLowerCase() + '-' + document.getElementById('h-date').value + '.csv';
+// ── HACCP ──
+function populateHACCP(unitList){
+  const sel=document.getElementById('h-unit');
+  sel.innerHTML=unitList.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
+}
+async function loadHACCP(){
+  const unit=document.getElementById('h-unit').value;
+  const date=document.getElementById('h-date').value;
+  if(!unit||!date) return;
+  const {data}=await SB.from('temperature_logs').select('*').eq('unit_name',unit).gte('created_at',date+'T00:00:00').lte('created_at',date+'T23:59:59').order('created_at');
+  const tbody=document.getElementById('h-body');
+  const sum=document.getElementById('h-sum');
+  if(!data||!data.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No records found</td></tr>';sum.textContent='';return;}
+  const temps=data.map(r=>r.temp).filter(v=>v!==null);
+  const avg=temps.length?(temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1):'—';
+  sum.textContent=`${data.length} readings · Avg ${avg}°C · Min ${Math.min(...temps).toFixed(1)}°C · Max ${Math.max(...temps).toFixed(1)}°C`;
+  tbody.innerHTML=data.map(r=>{
+    const d=new Date(r.created_at);
+    const a=r.alert||'none';
+    const tc=a==='critical'?'tcrit':a==='warning'?'twarn':'tok';
+    return `<tr><td>${d.toLocaleDateString('en-GB')}</td><td>${d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td><td>${r.unit_name}</td><td class="${tc}">${r.temp}°C</td><td><span class="badge ${a}">${stLabel(a)}</span></td><td>${r.snoozed?'Yes':'—'}</td></tr>`;
+  }).join('');
+}
+function exportCSV(){
+  const rows=[...document.querySelectorAll('#h-body tr')];
+  const lines=['Date,Time,Unit,Temperature,Status,Snoozed'];
+  rows.forEach(r=>{const cells=[...r.querySelectorAll('td')];if(cells.length<6) return;lines.push(cells.map(c=>'"'+c.innerText.replace(/"/g,'""')+'"').join(','));});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download='haccp-'+document.getElementById('h-unit').value.replace(/\s+/g,'-').toLowerCase()+'-'+document.getElementById('h-date').value+'.csv';
   a.click();
 }
 
 // ── TABS ──
-function setTab(tab) {
-  activeTab = tab;
-  ['overview','detail','haccp'].forEach(t => {
-    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+function setTab(tab){
+  activeTab=tab;
+  ['overview','detail','haccp'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
   });
-  document.querySelectorAll('.tab').forEach((el, i) => {
-    el.classList.toggle('active', ['overview','detail','haccp'][i] === tab);
-  });
-  if (tab === 'detail' && selectedUnit) renderDetailFull();
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['overview','detail','haccp'][i]===tab));
+  document.querySelectorAll('.sb-nav-item').forEach((el,i)=>el.classList.toggle('active',['overview','haccp'][i]===tab));
+  if(tab==='detail'&&SEL) renderDetailFull();
+  document.getElementById('topbar-title').textContent=tab==='overview'?'Overview':tab==='detail'?(SEL||'Unit detail'):'HACCP Log';
 }
 
-function selectUnit(name) {
-  selectedUnit = name;
-  renderSidebar();
-}
+function selectUnit(name){SEL=name;renderSidebar();}
+function slug(s){return s.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-]/g,'').toLowerCase();}
 
-// ── HELPERS ──
-function status(u) {
-  if (!u.lastSeen) return 'offline';
-  const ageMins = (Date.now() - new Date(u.lastSeen)) / 60000;
-  if (ageMins > 5) return 'offline';
-  if (u.snoozed) return 'snoozed';
-  return u.alert || 'ok';
-}
-
-function statusLabel(s) {
-  return { ok:'NOMINAL', none:'NOMINAL', warning:'WARNING', critical:'CRITICAL', offline:'OFFLINE', snoozed:'SNOOZED' }[s] || s.toUpperCase();
-}
-
-function fTemp(t) { return t !== null && t !== undefined ? t.toFixed(1) + '°C' : '—'; }
-
-function timeAgo(iso) {
-  if (!iso) return 'never';
-  const s = Math.floor((Date.now() - new Date(iso)) / 1000);
-  if (s < 10) return 'just now';
-  if (s < 60) return s + 's ago';
-  if (s < 3600) return Math.floor(s/60) + 'm ago';
-  return Math.floor(s/3600) + 'h ago';
-}
-
-function slug(s) { return s.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-]/g,'').toLowerCase(); }
-
-function tick() {
-  const now = new Date();
-  document.getElementById('sb-clock').textContent = now.toLocaleTimeString('en-GB');
-  // Mark offline after 5 min no reading
-  Object.values(UNITS).forEach(u => {
-    if (u.lastSeen) {
-      const age = (Date.now() - new Date(u.lastSeen)) / 60000;
-      if (age > 5 && u.alert !== 'offline') { u.alert = 'offline'; renderSidebar(); }
+// ── CLOCK ──
+function tick(){
+  document.getElementById('sb-clock').textContent=new Date().toLocaleTimeString('en-GB');
+  Object.values(UNITS).forEach(u=>{
+    if(u.lastSeen&&(Date.now()-new Date(u.lastSeen))/60000>5&&u.alert!=='offline'){
+      u.alert='offline';renderAll();
     }
   });
 }
-
-// ── AUTO CONNECT ──
-window.addEventListener('load', () => {
-  SB = window.supabase.createClient('https://jaajrllkozknilvmdezt.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphYWpybGxrb3prbmlsdm1kZXp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMjQxNDAsImV4cCI6MjA5MjYwMDE0MH0.09U5cba3JxRmysrn2X3TxPqr-q6jJE4QhyeKQwEK03M');
-  document.getElementById('setup-overlay').style.display = 'none';
-  boot();
-});
-
-// ── EDIT MODAL ──
-function openEditModal() {
-  if (!selectedUnit || !UNITS[selectedUnit]) return;
-  const u = UNITS[selectedUnit];
-  document.getElementById('edit-name').value = u.name;
-  document.getElementById('edit-location').value = u.location || '';
-  document.getElementById('edit-warn').value = u.warn_temp;
-  document.getElementById('edit-crit').value = u.critical_temp;
-  document.getElementById('edit-status').textContent = '';
-  document.getElementById('edit-modal').classList.add('show');
-}
-
-function closeEditModal() {
-  document.getElementById('edit-modal').classList.remove('show');
-}
-
-async function saveEdit() {
-  const name     = document.getElementById('edit-name').value.trim();
-  const location = document.getElementById('edit-location').value.trim();
-  const warn     = parseFloat(document.getElementById('edit-warn').value);
-  const crit     = parseFloat(document.getElementById('edit-crit').value);
-
-  if (!name || isNaN(warn) || isNaN(crit)) {
-    document.getElementById('edit-status').textContent = 'Fill in all fields';
-    document.getElementById('edit-status').style.color = 'var(--crit)';
-    return;
-  }
-
-  const { error } = await SB
-    .from('units')
-    .update({ name, location, warn_temp: warn, critical_temp: crit })
-    .eq('name', selectedUnit);
-
-  if (error) {
-    document.getElementById('edit-status').textContent = 'Save failed: ' + error.message;
-    document.getElementById('edit-status').style.color = 'var(--crit)';
-    return;
-  }
-
-  // Update local state
-  UNITS[name] = { ...UNITS[selectedUnit], name, location, warn_temp: warn, critical_temp: crit };
-  if (name !== selectedUnit) {
-    delete UNITS[selectedUnit];
-    selectedUnit = name;
-  }
-
-  document.getElementById('edit-status').textContent = '✓ Saved — Pi will push new thresholds to node within 5 minutes';
-  document.getElementById('edit-status').style.color = 'var(--ok)';
-
-  renderAll();
-  setTimeout(closeEditModal, 2000);
-}
-
-// Close modal on overlay click
-document.getElementById('edit-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeEditModal();
-});
-
 </script>
-
-<!-- EDIT UNIT MODAL -->
-<div class="modal-overlay" id="edit-modal">
-  <div class="modal">
-    <h3>Edit unit</h3>
-    <div class="modal-field">
-      <label>Unit name</label>
-      <input id="edit-name" type="text">
-    </div>
-    <div class="modal-field">
-      <label>Location</label>
-      <input id="edit-location" type="text">
-    </div>
-    <div class="modal-row">
-      <div class="modal-field">
-        <label>Warning threshold (°C)</label>
-        <input id="edit-warn" type="number" step="0.5">
-      </div>
-      <div class="modal-field">
-        <label>Critical threshold (°C)</label>
-        <input id="edit-crit" type="number" step="0.5">
-      </div>
-    </div>
-    <div class="modal-btns">
-      <button class="modal-cancel" onclick="closeEditModal()">Cancel</button>
-      <button class="modal-save" onclick="saveEdit()">Save changes</button>
-    </div>
-    <div class="modal-status" id="edit-status"></div>
-  </div>
-</div>
-
 </body>
 </html>
