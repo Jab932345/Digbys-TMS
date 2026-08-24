@@ -426,34 +426,42 @@ async function loadUnits(){
 }
 
 async function loadLatest(){
-  const since=new Date(Date.now()-90*60*1000).toISOString();
-  const{data}=await SB.from('temperature_logs').select('*').gte('created_at',since).order('created_at',{ascending:true});
-  if(!data) return;
-  Object.keys(UNITS).forEach(n=>{UNITS[n].history=[];});
-  data.forEach(r=>{
+  // Load current readings from temperature_live (fast, one row per unit)
+  const{data:live}=await SB.from('temperature_live').select('*');
+  if(live) live.forEach(r=>{
     if(!UNITS[r.unit_name]) return;
     const u=UNITS[r.unit_name];
     u.temp=r.temp; u.alert=r.alert; u.snoozed=r.snoozed;
-    u.defrost=r.defrost_mode||false; u.lastSeen=r.created_at;
-    u.history.push({t:r.created_at,v:r.temp,a:r.alert});
+    u.defrost=r.defrost_mode||false; u.lastSeen=r.updated_at;
     if(r.snoozed&&u.snoozeUntil<Date.now()){
       u.snoozeUntil=Date.now()+30*60000; u.snoozeTotal=30*60000;
     }
     if(!r.snoozed){u.snoozeUntil=0;u.snoozeTotal=0;}
   });
+
+  // Load recent history from temperature_logs (for sparklines/graphs)
+  const since=new Date(Date.now()-90*60*1000).toISOString();
+  const{data:logs}=await SB.from('temperature_logs').select('*').gte('created_at',since).order('created_at',{ascending:true});
+  if(logs){
+    Object.keys(UNITS).forEach(n=>{UNITS[n].history=[];});
+    logs.forEach(r=>{
+      if(!UNITS[r.unit_name]) return;
+      UNITS[r.unit_name].history.push({t:r.created_at,v:r.temp,a:r.alert});
+    });
+  }
   document.getElementById('sb-status').textContent='live'; renderAll();
 }
 
 function subscribeRealtime(){
-  SB.channel('tms').on('postgres_changes',{event:'INSERT',schema:'public',table:'temperature_logs'},p=>{
+  SB.channel('tms').on('postgres_changes',{event:'UPDATE',schema:'public',table:'temperature_live'},p=>{
     const r=p.new; if(!UNITS[r.unit_name]) return;
     const u=UNITS[r.unit_name];
     u.temp=r.temp; u.alert=r.alert; u.snoozed=r.snoozed;
-    u.defrost=r.defrost_mode||false; u.lastSeen=r.created_at;
-    u.history.push({t:r.created_at,v:r.temp,a:r.alert});
+    u.defrost=r.defrost_mode||false; u.lastSeen=r.updated_at;
+    u.history.push({t:r.updated_at,v:r.temp,a:r.alert});
     if(u.history.length>90) u.history.shift();
     if(!r.snoozed){u.snoozeUntil=0;u.snoozeTotal=0;}
-    document.getElementById('sb-status').textContent='live · '+new Date(r.created_at).toLocaleTimeString('en-GB');
+    document.getElementById('sb-status').textContent='live · '+new Date(r.updated_at).toLocaleTimeString('en-GB');
     renderAll();
     if(SEL===r.unit_name&&activeTab==='detail') liveUpdate(r);
   }).subscribe();
