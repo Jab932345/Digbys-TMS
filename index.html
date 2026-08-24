@@ -6,172 +6,214 @@
 <title>Digby's TMS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0a0a0f;
-  --bg2:#111118;
-  --bg3:#18181f;
-  --card:#14141c;
-  --card2:#1c1c26;
-  --border:#2a2a3a;
-  --border2:#3a3a50;
-  --text:#ffffff;
-  --text2:#b0b0cc;
-  --text3:#666680;
-  --ok:#00e676;--ok-d:#00a854;--ok-bg:rgba(0,230,118,.08);
-  --warn:#ffab00;--warn-d:#cc8800;--warn-bg:rgba(255,171,0,.1);
-  --crit:#ff1744;--crit-d:#cc0033;--crit-bg:rgba(255,23,68,.1);
-  --off:#444466;--off-bg:rgba(68,68,102,.1);
-  --snooze:#2979ff;--snooze-bg:rgba(41,121,255,.1);
-  --accent:#7c6af7;
+  --bg:#060b18;--bg2:#0c1428;--bg3:#111f3a;
+  --border:#1a2d4d;--border2:#243d60;
+  --text:#e8f4f8;--text2:#7eb3c9;--text3:#3d6070;
+  --ok:#00e5aa;--ok-dim:#003d2a;--ok-glow:rgba(0,229,170,.15);
+  --warn:#ffa726;--warn-dim:#3d2400;--warn-glow:rgba(255,167,38,.15);
+  --crit:#ff1744;--crit-dim:#3d0010;--crit-glow:rgba(255,23,68,.2);
+  --def:#00b4d8;--def-dim:#002d3d;--def-glow:rgba(0,180,216,.15);
+  --snz:#7c4dff;--snz-dim:#1a0d3d;--snz-glow:rgba(124,77,255,.15);
+  --off:#455a64;--off-dim:#0d1a20;--off-glow:rgba(69,90,100,.1);
 }
 html,body{height:100%;overflow:hidden}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;font-size:13px}
 
-/* ── SIDEBAR ── */
-.sb{width:220px;min-width:220px;background:#0d0d14;border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
-.sb-logo{padding:20px 18px 14px;border-bottom:1px solid var(--border)}
-.sb-logo h1{font-family:'Playfair Display',serif;font-size:16px;font-weight:500;color:var(--text);letter-spacing:-.01em}
-.sb-logo p{font-size:9px;color:var(--text3);letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
-.sb-nav{padding:10px 8px}
-.sb-nav-item{padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s;margin-bottom:1px;display:flex;align-items:center;gap:8px}
-.sb-nav-item:hover{background:var(--bg3);color:var(--text)}
-.sb-nav-item.active{background:var(--bg3);color:var(--text)}
-.sb-nav-icon{width:14px;text-align:center;opacity:.6}
-.sb-divider{height:1px;background:var(--border);margin:8px 8px}
-.sb-unit-list{padding:0 8px}
-.sb-unit{padding:10px 12px;border-radius:6px;cursor:pointer;margin-bottom:2px;display:flex;align-items:center;gap:8px;transition:all .15s}
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+.sb{width:200px;min-width:200px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border)}
+.sb-logo h1{font-family:'Playfair Display',serif;font-size:15px;font-weight:400;color:var(--text);letter-spacing:-.01em}
+.sb-logo p{font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+.sb-units{flex:1;overflow-y:auto;padding:8px 0}
+.sb-unit{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .15s;position:relative;border-left:3px solid transparent}
 .sb-unit:hover{background:var(--bg3)}
-.sb-unit.sel{background:var(--bg3);outline:1px solid var(--border2)}
-.udot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.udot.ok,.udot.none{background:var(--ok)}
-.udot.warning{background:var(--warn)}
-.udot.critical{background:var(--crit);animation:blink 1.2s infinite}
-.udot.offline{background:var(--off)}
-.udot.snoozed{background:var(--snooze)}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.sb-unit.sel{background:var(--bg3)}
+.sb-unit.ok,.sb-unit.none{border-left-color:var(--ok)}
+.sb-unit.warning{border-left-color:var(--warn)}
+.sb-unit.critical{border-left-color:var(--crit)}
+.sb-unit.defrost{border-left-color:var(--def)}
+.sb-unit.snoozed{border-left-color:var(--snz)}
+.sb-unit.offline{border-left-color:var(--off)}
 .sb-unit-name{font-size:11px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sb-unit-temp{font-family:'DM Mono',monospace;font-size:11px;color:var(--text);flex-shrink:0}
-.sb-foot{margin-top:auto;padding:12px 18px;border-top:1px solid var(--border);font-size:10px;color:var(--text3)}
-.pulse{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ok);margin-right:4px;animation:blink 2s infinite}
+.sb-unit-temp{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--text)}
+.sb-unit-temp.ok,.sb-unit-temp.none{color:var(--ok)}
+.sb-unit-temp.warning{color:var(--warn)}
+.sb-unit-temp.critical{color:var(--crit)}
+.sb-unit-temp.defrost{color:var(--def)}
+.sb-unit-temp.snoozed{color:var(--snz)}
+.sb-unit-temp.offline{color:var(--off)}
+.sb-foot{padding:12px 16px;border-top:1px solid var(--border);font-size:9px;color:var(--text3)}
+.live{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ok);margin-right:5px;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 currentColor}50%{box-shadow:0 0 0 6px transparent}}
 
-/* ── MAIN ── */
-.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;background:var(--bg)}
-.topbar{height:52px;padding:0 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg2)}
-.topbar-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:400;color:var(--text)}
-.tabs{display:flex;gap:2px;background:var(--bg3);border-radius:7px;padding:3px}
-.tab{padding:5px 14px;font-size:11px;cursor:pointer;color:var(--text3);background:transparent;border:none;border-radius:5px;transition:all .15s;font-family:'Inter',sans-serif}
-.tab.active{background:var(--card);color:var(--text)}
-
-/* ── CONTENT ── */
+/* ── MAIN ────────────────────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{height:48px;padding:0 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg2);flex-shrink:0}
+.topbar-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:400}
+.tabs{display:flex;gap:1px;background:var(--border);border-radius:6px;overflow:hidden}
+.tab{padding:5px 14px;font-size:11px;cursor:pointer;color:var(--text3);background:var(--bg2);border:none;font-family:'Inter',sans-serif;transition:all .15s}
+.tab.active{background:var(--bg3);color:var(--text)}
 .content{flex:1;overflow-y:auto;padding:16px 20px}
 
-/* ── OVERVIEW ── */
-.overview-header{display:flex;gap:10px;margin-bottom:16px}
-.mini-stat{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
-.mini-stat-lbl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
-.mini-stat-val{font-size:20px;font-weight:500;font-family:'DM Mono',monospace;color:var(--text)}
-.mini-stat-val.ok{color:var(--ok)}.mini-stat-val.warn{color:var(--warn)}.mini-stat-val.crit{color:var(--crit)}
+/* ── OVERVIEW GRID ───────────────────────────────────────── */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.mini{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:12px 14px}
+.mini-lbl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.mini-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:400}
+.mini-val.ok{color:var(--ok)}.mini-val.warn{color:var(--warn)}.mini-val.crit{color:var(--crit)}
 
-/* ── UNIT CARDS ── */
-.unit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-.ucard{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .2s;position:relative}
+.unit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+
+/* ── UNIT CARD ───────────────────────────────────────────── */
+.ucard{border-radius:10px;overflow:hidden;cursor:pointer;transition:all .2s;border:1px solid var(--border);background:var(--bg2)}
 .ucard:hover{border-color:var(--border2);transform:translateY(-1px)}
-.ucard.warning{border-color:var(--warn-d)}
-.ucard.critical{border-color:var(--crit-d);box-shadow:0 0 0 1px var(--crit-d),0 4px 20px rgba(204,51,51,.15)}
-.ucard-status-bar{height:4px;width:100%}
-.ucard-status-bar.ok{background:var(--ok)}
-.ucard-status-bar.warning{background:var(--warn)}
-.ucard-status-bar.critical{background:var(--crit);animation:blink 1.5s infinite}
-.ucard-status-bar.offline{background:var(--off)}
-.ucard-status-bar.snoozed{background:var(--snooze)}
-.ucard-body{padding:14px 16px}
-.ucard-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-.ucard-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:500;color:var(--text);line-height:1.2}
-.ucard-loc{font-size:10px;color:var(--text3);margin-top:2px}
-.ucard-temp{font-family:'DM Mono',monospace;font-size:40px;font-weight:500;line-height:1;text-align:right;letter-spacing:-1px}
+.ucard.ok,.ucard.none{box-shadow:inset 0 0 0 1px rgba(0,229,170,.1)}
+.ucard.warning{border-color:rgba(255,167,38,.3);box-shadow:0 0 20px rgba(255,167,38,.08)}
+.ucard.critical{border-color:rgba(255,23,68,.4);box-shadow:0 0 20px rgba(255,23,68,.15)}
+.ucard-head{padding:14px 16px 10px;position:relative}
+.ucard-status-stripe{height:2px;background:var(--border);margin-bottom:12px;border-radius:1px;overflow:hidden}
+.ucard-status-stripe-fill{height:100%;border-radius:1px;transition:width .5s}
+.ucard-status-stripe-fill.ok,.ucard-status-stripe-fill.none{background:var(--ok);width:100%}
+.ucard-status-stripe-fill.warning{background:var(--warn);width:65%}
+.ucard-status-stripe-fill.critical{background:var(--crit);width:100%;animation:blink .8s infinite}
+.ucard-status-stripe-fill.defrost{background:var(--def);width:100%}
+.ucard-status-stripe-fill.snoozed{background:var(--snz);width:100%}
+.ucard-status-stripe-fill.offline{background:var(--off);width:30%}
+.ucard-name{font-size:12px;color:var(--text2);margin-bottom:2px}
+.ucard-temp{font-family:'DM Mono',monospace;font-size:42px;font-weight:300;line-height:1;letter-spacing:-1px}
 .ucard-temp.ok,.ucard-temp.none{color:var(--ok)}
 .ucard-temp.warning{color:var(--warn)}
 .ucard-temp.critical{color:var(--crit)}
+.ucard-temp.defrost{color:var(--def)}
+.ucard-temp.snoozed{color:var(--snz)}
 .ucard-temp.offline{color:var(--off)}
-.ucard-temp.snoozed{color:var(--snooze)}
-.ucard-trend{font-size:10px;color:var(--text3);text-align:right;margin-top:2px}
-.trend-up{color:var(--crit)}.trend-down{color:var(--ok)}.trend-flat{color:var(--text3)}
-.ucard-spark{height:44px;padding:0 0 4px}
-.ucard-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 16px 12px;border-top:1px solid var(--border)}
-.ucard-thresholds{font-size:9px;color:var(--text3)}
-.ucard-thresholds span{color:var(--text2)}
-.badge{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:500;letter-spacing:.05em}
-.badge.ok,.badge.none{background:var(--ok-bg);color:var(--ok)}
-.badge.warning{background:var(--warn-bg);color:var(--warn)}
-.badge.critical{background:var(--crit-bg);color:var(--crit)}
-.badge.offline{background:var(--off-bg);color:var(--off)}
-.badge.snoozed{background:var(--snooze-bg);color:var(--snooze)}
-.ucard-controls{display:flex;gap:6px;padding:0 16px 12px}
-.cbtn{padding:5px 11px;border-radius:5px;border:1px solid var(--border);font-size:10px;cursor:pointer;background:transparent;color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s}
-.cbtn:hover{border-color:var(--border2);color:var(--text)}
-.cbtn.amber{border-color:var(--warn-d);color:var(--warn);background:var(--warn-bg)}
-.cbtn.blue{border-color:var(--snooze);color:var(--snooze);background:var(--snooze-bg)}
+.ucard-countdown{font-family:'DM Mono',monospace;font-size:11px;margin-top:4px;display:flex;align-items:center;gap:6px}
+.ucard-countdown-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.badge{font-size:8px;padding:2px 7px;border-radius:20px;font-weight:500;letter-spacing:.08em;display:inline-block;text-transform:uppercase}
+.badge.ok,.badge.none{background:var(--ok-dim);color:var(--ok);border:1px solid rgba(0,229,170,.2)}
+.badge.warning{background:var(--warn-dim);color:var(--warn);border:1px solid rgba(255,167,38,.2)}
+.badge.critical{background:var(--crit-dim);color:var(--crit);border:1px solid rgba(255,23,68,.3);animation:blink .8s infinite}
+.badge.defrost{background:var(--def-dim);color:var(--def);border:1px solid rgba(0,180,216,.2)}
+.badge.snoozed{background:var(--snz-dim);color:var(--snz);border:1px solid rgba(124,77,255,.2)}
+.badge.offline{background:var(--off-dim);color:var(--off);border:1px solid rgba(69,90,100,.2)}
+.ucard-foot{padding:8px 16px 10px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)}
+.ucard-meta{font-size:9px;color:var(--text3)}
+.ucard-controls{display:flex;gap:5px;padding:0 16px 10px}
+.qbtn{padding:4px 10px;border-radius:4px;border:1px solid var(--border);font-size:9px;cursor:pointer;background:transparent;color:var(--text3);font-family:'Inter',sans-serif;transition:all .15s;text-transform:uppercase;letter-spacing:.06em}
+.qbtn:hover{border-color:var(--border2);color:var(--text)}
+.qbtn.snz{border-color:rgba(124,77,255,.3);color:var(--snz)}
+.qbtn.def{border-color:rgba(0,180,216,.3);color:var(--def)}
 
-/* ── DETAIL ── */
-.detail-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.back{font-size:11px;color:var(--text3);cursor:pointer;padding:5px 0}
-.back:hover{color:var(--text)}
-.detail-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:400}
-.detail-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-.dstat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+/* ── DETAIL VIEW ─────────────────────────────────────────── */
+.detail-layout{display:grid;grid-template-columns:1fr 320px;gap:14px}
+.detail-left{}
+.detail-right{}
+
+/* Temperature hero */
+.temp-hero{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:14px;position:relative;overflow:hidden}
+.temp-hero-bg{position:absolute;inset:0;opacity:.04;pointer-events:none}
+.temp-hero-bg.ok{background:radial-gradient(circle at 70% 50%, var(--ok), transparent 60%)}
+.temp-hero-bg.warning{background:radial-gradient(circle at 70% 50%, var(--warn), transparent 60%)}
+.temp-hero-bg.critical{background:radial-gradient(circle at 70% 50%, var(--crit), transparent 60%)}
+.temp-hero-bg.defrost{background:radial-gradient(circle at 70% 50%, var(--def), transparent 60%)}
+.temp-hero-bg.snoozed{background:radial-gradient(circle at 70% 50%, var(--snz), transparent 60%)}
+.temp-hero-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.temp-hero-name{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;color:var(--text)}
+.temp-hero-loc{font-size:10px;color:var(--text3);margin-top:2px}
+.temp-hero-right{text-align:right}
+.temp-hero-main{display:flex;align-items:flex-end;gap:16px}
+.temp-hero-num{font-family:'DM Mono',monospace;font-size:72px;font-weight:300;line-height:1;letter-spacing:-3px}
+.temp-hero-num.ok,.temp-hero-num.none{color:var(--ok)}
+.temp-hero-num.warning{color:var(--warn)}
+.temp-hero-num.critical{color:var(--crit)}
+.temp-hero-num.defrost{color:var(--def)}
+.temp-hero-num.snoozed{color:var(--snz)}
+.temp-hero-num.offline{color:var(--off)}
+.temp-hero-side{padding-bottom:10px}
+.temp-hero-thresholds{font-size:10px;color:var(--text3);line-height:1.8}
+.temp-hero-thresholds span{color:var(--text2)}
+
+/* Stats row */
+.d-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.dstat{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
 .dstat-lbl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
-.dstat-val{font-family:'DM Mono',monospace;font-size:28px;font-weight:500}
+.dstat-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:300}
 .dstat-val.ok{color:var(--ok)}.dstat-val.warning{color:var(--warn)}.dstat-val.critical{color:var(--crit)}
-.chart-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
-.chart-lbl{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;display:flex;justify-content:space-between}
-.chart-wrap{height:160px}
-.ctrl-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
-.ctrl-lbl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
-.ctrl-row{display:flex;gap:8px;flex-wrap:wrap}
-.ctrl-btn{padding:8px 16px;border-radius:6px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:transparent;color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s}
-.ctrl-btn:hover{border-color:var(--border2);color:var(--text)}
-.ctrl-btn.amber{border-color:var(--warn-d);color:var(--warn);background:var(--warn-bg)}
-.ctrl-btn.blue{border-color:var(--snooze);color:var(--snooze);background:var(--snooze-bg)}
-.ctrl-btn.red{border-color:var(--crit-d);color:var(--crit);background:var(--crit-bg)}
-.ctrl-btn.green{border-color:var(--ok-d);color:var(--ok);background:var(--ok-bg)}
-.ctrl-note{font-size:10px;color:var(--text3);margin-top:10px}
-.recent-table{width:100%;border-collapse:collapse;font-size:11px}
-.recent-table th{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);font-size:9px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-weight:400}
-.recent-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
-.recent-table tr:last-child td{border:none}
-.recent-table tr:hover td{background:var(--bg3)}
+
+/* Chart */
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
+.chart-lbl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+.chart-wrap{height:150px}
+
+/* Controls panel */
+.ctrl-panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ctrl-section{padding:16px;border-bottom:1px solid var(--border)}
+.ctrl-section:last-child{border-bottom:none}
+.ctrl-section-title{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+
+/* Countdown ring */
+.countdown-wrap{display:flex;flex-direction:column;align-items:center;padding:8px 0 14px}
+.countdown-ring-wrap{position:relative;width:120px;height:120px;margin-bottom:10px}
+.countdown-ring-wrap svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.countdown-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.countdown-time{font-family:'DM Mono',monospace;font-size:22px;font-weight:300;line-height:1}
+.countdown-label{font-size:9px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
+.countdown-badge{font-size:10px;color:var(--text2);margin-bottom:8px}
+
+/* Snooze controls */
+.snooze-times{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:8px}
+.snooze-time{padding:7px 0;border-radius:5px;border:1px solid var(--border);font-size:10px;cursor:pointer;background:transparent;color:var(--text3);font-family:'Inter',sans-serif;transition:all .15s;text-align:center}
+.snooze-time:hover{border-color:var(--snz);color:var(--snz)}
+.snooze-time.active{background:var(--snz-dim);border-color:var(--snz);color:var(--snz)}
+.clear-btn{width:100%;padding:7px;border-radius:5px;border:1px solid var(--border);font-size:10px;cursor:pointer;background:transparent;color:var(--text3);font-family:'Inter',sans-serif;transition:all .15s}
+.clear-btn:hover{border-color:var(--crit);color:var(--crit)}
+
+/* Defrost toggle */
+.defrost-toggle{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+.defrost-toggle-label{font-size:12px;color:var(--text2)}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-track{position:absolute;inset:0;background:var(--border);border-radius:12px;transition:all .2s}
+.toggle input:checked~.toggle-track{background:var(--def)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:all .2s}
+.toggle input:checked~.toggle-thumb{transform:translateX(20px)}
+
+/* Settings panel */
+.setting-field{margin-bottom:12px}
+.setting-field label{display:block;font-size:9px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.setting-field input{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);transition:border .15s}
+.setting-field input:focus{outline:none;border-color:var(--border2)}
+.setting-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.save-btn{width:100%;padding:8px;border-radius:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;margin-top:4px;transition:all .15s}
+.save-btn:hover{border-color:var(--ok);color:var(--ok)}
+.save-note{font-size:9px;color:var(--text3);margin-top:6px;text-align:center}
+
+/* Recent log */
+.log-table{width:100%;border-collapse:collapse;font-size:11px}
+.log-table th{text-align:left;padding:7px 0;border-bottom:1px solid var(--border);font-size:9px;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;font-weight:400}
+.log-table td{padding:7px 0;border-bottom:1px solid var(--border)}
+.log-table tr:last-child td{border:none}
 .tok{color:var(--ok);font-family:'DM Mono',monospace}
 .twarn{color:var(--warn);font-family:'DM Mono',monospace}
 .tcrit{color:var(--crit);font-family:'DM Mono',monospace}
-.tbl-card{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
 
-/* ── HACCP ── */
-.hfilter{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-.hfilter select,.hfilter input{padding:7px 11px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--card);color:var(--text);font-family:'Inter',sans-serif}
-.hfilter button{padding:7px 14px;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:var(--card);color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s}
+/* HACCP */
+.hfilter{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.hfilter select,.hfilter input{padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--bg2);color:var(--text);font-family:'Inter',sans-serif}
+.hfilter button{padding:6px 13px;border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;background:var(--bg2);color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s}
 .hfilter button:hover{color:var(--text);border-color:var(--border2)}
-.hsum{font-size:10px;color:var(--text3);margin-bottom:12px}
-
-/* ── EDIT MODAL ── */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(4px)}
-.modal-bg.show{display:flex}
-.modal{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:28px;width:400px;max-width:90vw}
-.modal h3{font-family:'Playfair Display',serif;font-size:18px;margin-bottom:16px;color:var(--text)}
-.mf{margin-bottom:13px}
-.mf label{display:block;font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
-.mf input{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text)}
-.mf input:focus{outline:none;border-color:var(--accent)}
-.mf-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.m-btns{display:flex;gap:8px;margin-top:18px}
-.m-save{flex:1;padding:9px;border-radius:6px;background:var(--accent);color:var(--bg);border:none;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:500}
-.m-cancel{padding:9px 16px;border-radius:6px;border:1px solid var(--border);background:transparent;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;color:var(--text2)}
-.m-status{font-size:10px;margin-top:8px;text-align:center;min-height:14px}
-
-/* ── EMPTY ── */
-.empty{text-align:center;padding:48px 20px;color:var(--text3);font-size:12px}
+.hsum{font-size:10px;color:var(--text3);margin-bottom:10px}
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.full-table{width:100%;border-collapse:collapse;font-size:11px}
+.full-table th{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);font-size:9px;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;font-weight:400;background:var(--bg3)}
+.full-table td{padding:9px 12px;border-bottom:1px solid var(--border)}
+.full-table tr:last-child td{border:none}
+.full-table tr:hover td{background:var(--bg3)}
 </style>
 </head>
 <body>
@@ -182,20 +224,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
     <h1>Digby's TMS</h1>
     <p>Temperature Monitor</p>
   </div>
-  <div class="sb-nav">
-    <div class="sb-nav-item active" onclick="setTab('overview')" id="nav-overview">
-      <span class="sb-nav-icon">◻</span> Dashboard
-    </div>
-    <div class="sb-nav-item" onclick="setTab('haccp')" id="nav-haccp">
-      <span class="sb-nav-icon">◻</span> HACCP Log
-    </div>
-  </div>
-  <div class="sb-divider"></div>
-  <div style="padding:0 8px 6px;font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding:8px 20px 4px">Units</div>
-  <div class="sb-unit-list" id="sb-units"></div>
+  <div class="sb-units" id="sb-units"></div>
   <div class="sb-foot">
-    <div><span class="pulse"></span><span id="sb-status">connecting</span></div>
-    <div style="margin-top:3px" id="sb-clock"></div>
+    <div><span class="live"></span><span id="sb-status">connecting</span></div>
+    <div style="margin-top:2px" id="sb-clock"></div>
   </div>
 </div>
 
@@ -204,7 +236,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
   <div class="topbar">
     <div class="topbar-title" id="topbar-title">Overview</div>
     <div class="tabs">
-      <button class="tab active" onclick="setTab('overview')">Dashboard</button>
+      <button class="tab active" onclick="setTab('overview')">Overview</button>
       <button class="tab" onclick="setTab('detail')">Unit detail</button>
       <button class="tab" onclick="setTab('haccp')">HACCP log</button>
     </div>
@@ -214,44 +246,138 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 
     <!-- OVERVIEW -->
     <div id="tab-overview">
-      <div class="overview-header" id="overview-stats"></div>
+      <div class="stat-row" id="stat-row"></div>
       <div class="unit-grid" id="unit-grid"></div>
     </div>
 
     <!-- DETAIL -->
     <div id="tab-detail" style="display:none">
-      <div class="detail-head">
-        <div class="back" onclick="setTab('overview')">← Overview</div>
-        <div class="detail-title" id="d-title">—</div>
-        <span class="badge" id="d-badge"></span>
-      </div>
-      <div class="detail-stats">
-        <div class="dstat"><div class="dstat-lbl">Current</div><div class="dstat-val" id="d-temp">—</div></div>
-        <div class="dstat"><div class="dstat-lbl">Warning at</div><div class="dstat-val" style="color:var(--warn)" id="d-warn">—</div></div>
-        <div class="dstat"><div class="dstat-lbl">Critical at</div><div class="dstat-val" style="color:var(--crit)" id="d-crit">—</div></div>
-        <div class="dstat"><div class="dstat-lbl">Last reading</div><div class="dstat-val" style="font-size:14px;padding-top:6px" id="d-last">—</div></div>
-        <div class="dstat"><div class="dstat-lbl">Min 24hr</div><div class="dstat-val" id="d-min">—</div></div>
-        <div class="dstat"><div class="dstat-lbl">Max 24hr</div><div class="dstat-val" id="d-max">—</div></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-lbl"><span>24hr temperature history</span><span id="d-range" style="color:var(--text3)"></span></div>
-        <div class="chart-wrap"><canvas id="d-chart"></canvas></div>
-      </div>
-      <div class="ctrl-card">
-        <div class="ctrl-lbl">Controls</div>
-        <div class="ctrl-row">
-          <button class="ctrl-btn amber" onclick="cmdSnooze()">+ 30 min snooze</button>
-          <button class="ctrl-btn red" onclick="cmdClearSnooze()">Clear snooze</button>
-          <button class="ctrl-btn blue" id="btn-defrost" onclick="cmdDefrost()">Enable defrost</button>
-          <button class="ctrl-btn" onclick="openEdit()">Edit unit</button>
+      <div class="detail-layout">
+        <div class="detail-left">
+          <!-- Temperature hero -->
+          <div class="temp-hero" id="d-hero">
+            <div class="temp-hero-bg" id="d-hero-bg"></div>
+            <div class="temp-hero-top">
+              <div>
+                <div class="temp-hero-name" id="d-name">—</div>
+                <div class="temp-hero-loc" id="d-loc"></div>
+              </div>
+              <div class="temp-hero-right">
+                <span class="badge" id="d-badge"></span>
+                <div style="margin-top:6px" id="d-ago" style="font-size:10px;color:var(--text3)"></div>
+              </div>
+            </div>
+            <div class="temp-hero-main">
+              <div class="temp-hero-num" id="d-temp">—</div>
+              <div class="temp-hero-side">
+                <div class="temp-hero-thresholds">
+                  <div>Warn <span id="d-warn-t">—</span></div>
+                  <div>Crit <span id="d-crit-t">—</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="d-stats">
+            <div class="dstat"><div class="dstat-lbl">Min 24hr</div><div class="dstat-val" id="d-min">—</div></div>
+            <div class="dstat"><div class="dstat-lbl">Max 24hr</div><div class="dstat-val" id="d-max">—</div></div>
+            <div class="dstat"><div class="dstat-lbl">Avg 24hr</div><div class="dstat-val" id="d-avg">—</div></div>
+          </div>
+
+          <!-- Chart -->
+          <div class="chart-card">
+            <div class="chart-lbl">24 hour temperature history</div>
+            <div class="chart-wrap"><canvas id="d-chart"></canvas></div>
+          </div>
+
+          <!-- Recent log -->
+          <div class="chart-card">
+            <div class="chart-lbl">Recent readings</div>
+            <table class="log-table">
+              <thead><tr><th>Time</th><th>Temperature</th><th>Status</th></tr></thead>
+              <tbody id="d-log"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="ctrl-note" id="ctrl-note"></div>
-      </div>
-      <div class="tbl-card">
-        <table class="recent-table">
-          <thead><tr><th>Time</th><th>Temperature</th><th>Status</th></tr></thead>
-          <tbody id="d-log"></tbody>
-        </table>
+
+        <div class="detail-right">
+          <div class="ctrl-panel">
+
+            <!-- Countdown / Status -->
+            <div class="ctrl-section" id="countdown-section" style="display:none">
+              <div class="ctrl-section-title" id="countdown-title">Snooze active</div>
+              <div class="countdown-wrap">
+                <div class="countdown-ring-wrap">
+                  <svg viewBox="0 0 120 120" width="120" height="120">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="6"/>
+                    <circle id="countdown-ring" cx="60" cy="60" r="52" fill="none" stroke-width="6"
+                      stroke-linecap="round"
+                      stroke-dasharray="326.7"
+                      stroke-dashoffset="0"/>
+                  </svg>
+                  <div class="countdown-center">
+                    <div class="countdown-time" id="countdown-time">--:--</div>
+                    <div class="countdown-label" id="countdown-lbl">remaining</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Snooze -->
+            <div class="ctrl-section">
+              <div class="ctrl-section-title">Snooze alarm</div>
+              <div class="snooze-times">
+                <button class="snooze-time" onclick="sendSnooze(15)" data-mins="15">15m</button>
+                <button class="snooze-time" onclick="sendSnooze(30)" data-mins="30">30m</button>
+                <button class="snooze-time" onclick="sendSnooze(60)" data-mins="60">1hr</button>
+                <button class="snooze-time" onclick="sendSnooze(120)" data-mins="120">2hr</button>
+                <button class="snooze-time" onclick="sendSnooze(240)" data-mins="240">4hr</button>
+              </div>
+              <button class="clear-btn" onclick="sendClear()">Clear snooze</button>
+            </div>
+
+            <!-- Defrost -->
+            <div class="ctrl-section">
+              <div class="ctrl-section-title">Defrost mode</div>
+              <div class="defrost-toggle">
+                <div class="defrost-toggle-label">Defrost active</div>
+                <label class="toggle">
+                  <input type="checkbox" id="defrost-toggle" onchange="toggleDefrost(this.checked)">
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+              <div style="font-size:10px;color:var(--text3);margin-top:8px">Suppresses alerts while defrost cycle runs</div>
+            </div>
+
+            <!-- Settings -->
+            <div class="ctrl-section">
+              <div class="ctrl-section-title">Unit settings</div>
+              <div class="setting-field">
+                <label>Unit name</label>
+                <input id="s-name" type="text">
+              </div>
+              <div class="setting-field">
+                <label>Location</label>
+                <input id="s-loc" type="text">
+              </div>
+              <div class="setting-row">
+                <div class="setting-field">
+                  <label>Warning °C</label>
+                  <input id="s-warn" type="number" step="0.5">
+                </div>
+                <div class="setting-field">
+                  <label>Critical °C</label>
+                  <input id="s-crit" type="number" step="0.5">
+                </div>
+              </div>
+              <button class="save-btn" onclick="saveSettings()">Save settings</button>
+              <div class="save-note" id="save-note"></div>
+            </div>
+
+          </div>
+        </div>
       </div>
     </div>
 
@@ -260,36 +386,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
       <div class="hfilter">
         <select id="h-unit"></select>
         <input type="date" id="h-date">
-        <button onclick="loadHACCP()">Load</button>
+        <button onclick="loadHACCP()">Load records</button>
         <button onclick="exportCSV()">Export CSV ↓</button>
       </div>
       <div class="hsum" id="h-sum"></div>
-      <div class="tbl-card">
-        <table class="recent-table">
+      <div class="tbl-wrap">
+        <table class="full-table">
           <thead><tr><th>Date</th><th>Time</th><th>Unit</th><th>Temperature</th><th>Status</th><th>Snoozed</th></tr></thead>
-          <tbody id="h-body"><tr><td colspan="6" class="empty">Select a unit and date above</td></tr></tbody>
+          <tbody id="h-body"><tr><td colspan="6" style="padding:20px;color:var(--text3);text-align:center">Select a unit and date above</td></tr></tbody>
         </table>
       </div>
     </div>
 
-  </div>
-</div>
-
-<!-- EDIT MODAL -->
-<div class="modal-bg" id="edit-modal">
-  <div class="modal">
-    <h3>Edit unit</h3>
-    <div class="mf"><label>Name</label><input id="e-name" type="text"></div>
-    <div class="mf"><label>Location</label><input id="e-loc" type="text"></div>
-    <div class="mf-row">
-      <div class="mf"><label>Warning (°C)</label><input id="e-warn" type="number" step="0.5"></div>
-      <div class="mf"><label>Critical (°C)</label><input id="e-crit" type="number" step="0.5"></div>
-    </div>
-    <div class="m-btns">
-      <button class="m-cancel" onclick="closeEdit()">Cancel</button>
-      <button class="m-save" onclick="saveEdit()">Save</button>
-    </div>
-    <div class="m-status" id="e-status"></div>
   </div>
 </div>
 
@@ -299,7 +407,7 @@ const SB_URL = 'https://jaajrllkozknilvmdezt.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphYWpybGxrb3prbmlsdm1kZXp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMjQxNDAsImV4cCI6MjA5MjYwMDE0MH0.09U5cba3JxRmysrn2X3TxPqr-q6jJE4QhyeKQwEK03M';
 
 // ── STATE ──
-let SB, UNITS = {}, SEL = null, CHARTS = {}, activeTab = 'overview', defrostState = {};
+let SB, UNITS = {}, SEL = null, CHARTS = {}, activeTab = 'overview';
 
 // ── INIT ──
 window.addEventListener('load', async () => {
@@ -309,15 +417,14 @@ window.addEventListener('load', async () => {
   setInterval(tick, 1000);
   setInterval(loadLatest, 60000);
   document.getElementById('h-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('edit-modal').addEventListener('click', e => { if(e.target===document.getElementById('edit-modal')) closeEdit(); });
 });
 
 async function loadUnits() {
   const {data} = await SB.from('units').select('*').eq('active',true).order('name');
   if (!data) return;
   data.forEach(u => {
-    UNITS[u.name] = {...u, temp:null, alert:'offline', snoozed:false, lastSeen:null, history:[]};
-    defrostState[u.name] = false;
+    UNITS[u.name] = {...u, temp:null, alert:'offline', snoozed:false, defrost:false,
+      lastSeen:null, history:[], snoozeUntil:0, snoozeTotal:0};
   });
   populateHACCP(data);
   await loadLatest();
@@ -328,28 +435,37 @@ async function loadLatest() {
   const since = new Date(Date.now() - 90*60*1000).toISOString();
   const {data} = await SB.from('temperature_logs').select('*').gte('created_at',since).order('created_at',{ascending:true});
   if (!data) return;
-  Object.keys(UNITS).forEach(n => { UNITS[n].history = []; });
+  Object.keys(UNITS).forEach(n => UNITS[n].history=[]);
   data.forEach(r => {
     if (!UNITS[r.unit_name]) return;
     const u = UNITS[r.unit_name];
-    u.temp = r.temp; u.alert = r.alert; u.snoozed = r.snoozed; u.lastSeen = r.created_at;
+    u.temp=r.temp; u.alert=r.alert; u.snoozed=r.snoozed; u.lastSeen=r.created_at;
+    u.defrost = r.defrost_mode || false;
     u.history.push({t:r.created_at, v:r.temp, a:r.alert});
+    // If snoozed and no local snoozeUntil, estimate
+    if (r.snoozed && u.snoozeUntil < Date.now()) {
+      u.snoozeUntil = Date.now() + 30*60*1000;
+      u.snoozeTotal = 30*60*1000;
+    }
+    if (!r.snoozed) { u.snoozeUntil = 0; u.snoozeTotal = 0; }
   });
   document.getElementById('sb-status').textContent = 'live';
   renderAll();
 }
 
 function subscribeRealtime() {
-  SB.channel('tms').on('postgres_changes',{event:'INSERT',schema:'public',table:'temperature_logs'}, p => {
+  SB.channel('tms-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'temperature_logs'}, p => {
     const r = p.new;
     if (!UNITS[r.unit_name]) return;
     const u = UNITS[r.unit_name];
     u.temp=r.temp; u.alert=r.alert; u.snoozed=r.snoozed; u.lastSeen=r.created_at;
-    u.history.push({t:r.created_at,v:r.temp,a:r.alert});
-    if(u.history.length>90) u.history.shift();
+    u.defrost = r.defrost_mode || false;
+    u.history.push({t:r.created_at, v:r.temp, a:r.alert});
+    if (u.history.length>90) u.history.shift();
+    if (!r.snoozed) { u.snoozeUntil=0; u.snoozeTotal=0; }
     document.getElementById('sb-status').textContent = 'live · ' + new Date(r.created_at).toLocaleTimeString('en-GB');
     renderAll();
-    if(SEL===r.unit_name && activeTab==='detail') liveUpdateDetail(r);
+    if (SEL===r.unit_name && activeTab==='detail') updateDetailLive(r);
   }).subscribe();
 }
 
@@ -357,233 +473,295 @@ function subscribeRealtime() {
 function st(u) {
   if (!u.lastSeen) return 'offline';
   if ((Date.now()-new Date(u.lastSeen))/60000 > 5) return 'offline';
+  if (u.defrost) return 'defrost';
   if (u.snoozed) return 'snoozed';
   return u.alert||'ok';
 }
-function stLabel(s){return{ok:'NOMINAL',none:'NOMINAL',warning:'WARNING',critical:'CRITICAL',offline:'OFFLINE',snoozed:'SNOOZED'}[s]||s.toUpperCase()}
-function stColor(s){return{ok:'ok',none:'ok',warning:'warning',critical:'critical',offline:'offline',snoozed:'snoozed'}[s]||'ok'}
-function fT(t){return t!==null&&t!==undefined?t.toFixed(1)+'°C':'—'}
+function stLabel(s){return{ok:'Nominal',none:'Nominal',warning:'Warning',critical:'Critical!',offline:'Offline',snoozed:'Snoozed',defrost:'Defrost'}[s]||s}
+function stColor(s){return{ok:'ok',none:'ok',warning:'warning',critical:'critical',offline:'offline',snoozed:'snoozed',defrost:'defrost'}[s]||'ok'}
+function cssVar(s){return{ok:'var(--ok)',none:'var(--ok)',warning:'var(--warn)',critical:'var(--crit)',offline:'var(--off)',snoozed:'var(--snz)',defrost:'var(--def)'}[s]||'var(--ok)'}
+function fT(t){return t!==null&&t!==undefined?t.toFixed(1)+'°':'—'}
 function ago(iso){
   if(!iso) return 'never';
   const s=Math.floor((Date.now()-new Date(iso))/1000);
-  if(s<10) return 'just now';
-  if(s<60) return s+'s ago';
-  if(s<3600) return Math.floor(s/60)+'m ago';
-  return Math.floor(s/3600)+'h ago';
+  if(s<10) return 'just now'; if(s<60) return s+'s ago';
+  if(s<3600) return Math.floor(s/60)+'m ago'; return Math.floor(s/3600)+'h ago';
 }
-function trend(u) {
-  const h = u.history; if(h.length<3) return '';
-  const recent = h.slice(-3).map(p=>p.v).filter(v=>v!==null);
-  if(recent.length<2) return '';
-  const diff = recent[recent.length-1] - recent[0];
-  if(Math.abs(diff)<0.3) return '<span class="trend-flat">→</span>';
-  return diff>0 ? '<span class="trend-up">↑</span>' : '<span class="trend-down">↓</span>';
+function fCountdown(ms) {
+  if (ms<=0) return null;
+  const tot = Math.floor(ms/1000);
+  const h = Math.floor(tot/3600);
+  const m = Math.floor((tot%3600)/60);
+  const s = tot%60;
+  if (h>0) return h+'h '+String(m).padStart(2,'0')+'m';
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
 }
 
-// ── RENDER ──
-function renderAll() {
+// ── RENDER ALL ──
+function renderAll(){
   renderSidebar(); renderStats();
   if(activeTab==='overview') renderGrid();
-  if(activeTab==='detail' && SEL) renderDetailFull();
+  if(activeTab==='detail'&&SEL) renderDetailFull();
 }
 
-function renderSidebar() {
-  const el = document.getElementById('sb-units');
-  el.innerHTML = '';
-  Object.values(UNITS).forEach(u => {
-    const s = st(u);
-    const d = document.createElement('div');
-    d.className = 'sb-unit'+(SEL===u.name?' sel':'');
-    d.onclick = () => { SEL=u.name; setTab('detail'); };
-    d.innerHTML = `<div class="udot ${s}"></div><div class="sb-unit-name">${u.name}</div><div class="sb-unit-temp">${u.temp!==null?u.temp.toFixed(1)+'°':'—'}</div>`;
+function renderSidebar(){
+  const el=document.getElementById('sb-units'); el.innerHTML='';
+  Object.values(UNITS).forEach(u=>{
+    const s=st(u); const sc=stColor(s);
+    const d=document.createElement('div');
+    d.className='sb-unit '+sc+(SEL===u.name?' sel':'');
+    d.onclick=()=>{SEL=u.name;setTab('detail');};
+    const rem = u.snoozeUntil>Date.now() ? ' · '+fCountdown(u.snoozeUntil-Date.now()) : '';
+    d.innerHTML=`<div style="flex:1"><div class="sb-unit-name">${u.name}</div>${rem?`<div style="font-size:9px;color:var(--snz)">${rem}</div>`:''}</div><div class="sb-unit-temp ${sc}">${fT(u.temp)}</div>`;
     el.appendChild(d);
   });
 }
 
-function renderStats() {
-  const all = Object.values(UNITS);
-  const online = all.filter(u=>st(u)!=='offline').length;
-  const crits  = all.filter(u=>u.alert==='critical'&&!u.snoozed).length;
-  const warns  = all.filter(u=>u.alert==='warning'&&!u.snoozed).length;
-  const snzd   = all.filter(u=>u.snoozed).length;
-  document.getElementById('overview-stats').innerHTML = `
-    <div class="mini-stat"><div class="mini-stat-lbl">Online</div><div class="mini-stat-val ${online===all.length?'ok':''}">${online}/${all.length}</div></div>
-    <div class="mini-stat"><div class="mini-stat-lbl">Critical alerts</div><div class="mini-stat-val ${crits>0?'crit':''}">${crits}</div></div>
-    <div class="mini-stat"><div class="mini-stat-lbl">Warnings</div><div class="mini-stat-val ${warns>0?'warn':''}">${warns}</div></div>
-    <div class="mini-stat"><div class="mini-stat-lbl">Snoozed</div><div class="mini-stat-val">${snzd}</div></div>
+function renderStats(){
+  const all=Object.values(UNITS);
+  const online=all.filter(u=>st(u)!=='offline').length;
+  const crits=all.filter(u=>u.alert==='critical'&&!u.snoozed&&!u.defrost).length;
+  const warns=all.filter(u=>u.alert==='warning'&&!u.snoozed&&!u.defrost).length;
+  const active=all.filter(u=>u.snoozed||u.defrost).length;
+  document.getElementById('stat-row').innerHTML=`
+    <div class="mini"><div class="mini-lbl">Online</div><div class="mini-val ${online===all.length?'ok':''}">${online}/${all.length}</div></div>
+    <div class="mini"><div class="mini-lbl">Critical</div><div class="mini-val ${crits>0?'crit':''}">${crits}</div></div>
+    <div class="mini"><div class="mini-lbl">Warning</div><div class="mini-val ${warns>0?'warn':''}">${warns}</div></div>
+    <div class="mini"><div class="mini-lbl">Snoozed/Defrost</div><div class="mini-val">${active}</div></div>
   `;
 }
 
-function renderGrid() {
-  const grid = document.getElementById('unit-grid');
-  Object.values(UNITS).forEach(u => {
-    const s = st(u); const sc = stColor(s);
-    let card = document.getElementById('uc-'+slug(u.name));
+function renderGrid(){
+  const grid=document.getElementById('unit-grid');
+  Object.values(UNITS).forEach(u=>{
+    const s=st(u); const sc=stColor(s);
+    const rem=u.snoozeUntil>Date.now()?u.snoozeUntil-Date.now():0;
+    let card=document.getElementById('uc-'+slug(u.name));
     if(!card){card=document.createElement('div');card.id='uc-'+slug(u.name);grid.appendChild(card);}
-    card.className = 'ucard '+sc;
-    card.onclick = ()=>{SEL=u.name;setTab('detail');};
-    card.innerHTML = `
-      <div class="ucard-status-bar ${sc}"></div>
-      <div class="ucard-body">
-        <div class="ucard-row">
-          <div><div class="ucard-name">${u.name}</div><div class="ucard-loc">${u.location||''}</div></div>
-          <div><div class="ucard-temp ${sc}">${fT(u.temp)}</div><div class="ucard-trend">${trend(u)}</div></div>
+    card.className='ucard '+sc;
+    card.onclick=()=>{SEL=u.name;setTab('detail');};
+    const countdownHtml = rem>0 ? `<div class="ucard-countdown"><div class="ucard-countdown-dot" style="background:${cssVar(sc)}"></div><span style="color:${cssVar(sc)}">${fCountdown(rem)}</span></div>` : '';
+    const defrostHtml = u.defrost ? `<div class="ucard-countdown"><div class="ucard-countdown-dot" style="background:var(--def)"></div><span style="color:var(--def)">Defrost active</span></div>` : '';
+    card.innerHTML=`
+      <div class="ucard-head">
+        <div class="ucard-status-stripe"><div class="ucard-status-stripe-fill ${sc}"></div></div>
+        <div class="ucard-name">${u.name}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end">
+          <div>
+            <div class="ucard-temp ${sc}">${fT(u.temp)}</div>
+            ${countdownHtml}${defrostHtml}
+          </div>
+          <span class="badge ${sc}">${stLabel(s)}</span>
         </div>
-        <div class="ucard-spark"><canvas id="sp-${slug(u.name)}" height="40"></canvas></div>
       </div>
       <div class="ucard-foot">
-        <div class="ucard-thresholds">W <span>${u.warn_temp}°</span> · C <span>${u.critical_temp}°</span> · <span>${ago(u.lastSeen)}</span></div>
-        <span class="badge ${sc}">${stLabel(s)}</span>
+        <div class="ucard-meta">W ${u.warn_temp}° · C ${u.critical_temp}° · ${ago(u.lastSeen)}</div>
       </div>
       <div class="ucard-controls">
-        <button class="cbtn amber" onclick="event.stopPropagation();qSnooze('${u.name}')">+ Snooze</button>
-        <button class="cbtn blue" onclick="event.stopPropagation();qDefrost('${u.name}')">Defrost</button>
+        <button class="qbtn snz" onclick="event.stopPropagation();qSendSnooze('${u.name}',30)">Snooze 30m</button>
+        <button class="qbtn def" onclick="event.stopPropagation();qToggleDefrost('${u.name}')">Defrost</button>
       </div>
     `;
-    setTimeout(()=>drawSpark(u.name),30);
-  });
-}
-
-function drawSpark(name) {
-  const u=UNITS[name]; if(!u) return;
-  const id='sp-'+slug(name);
-  const canvas=document.getElementById(id); if(!canvas) return;
-  const s=st(u);
-  const c={ok:'#4a8c1c',none:'#4a8c1c',warning:'#c4821a',critical:'#cc3333',offline:'#4a4540',snoozed:'#2a6abf'}[s]||'#4a8c1c';
-  if(CHARTS[id]){CHARTS[id].destroy();delete CHARTS[id];}
-  const pts=u.history.slice(-30); if(!pts.length) return;
-  CHARTS[id]=new Chart(canvas,{
-    type:'line',
-    data:{labels:pts.map(()=>''),datasets:[{data:pts.map(p=>p.v),borderColor:c,borderWidth:1.5,pointRadius:0,tension:0.3,fill:true,backgroundColor:c+'20'}]},
-    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}
   });
 }
 
 // ── DETAIL ──
-function renderDetailFull() {
+function renderDetailFull(){
   if(!SEL||!UNITS[SEL]) return;
   const u=UNITS[SEL]; const s=st(u); const sc=stColor(s);
-  document.getElementById('d-title').textContent=u.name;
+  const c=cssVar(sc);
+  document.getElementById('d-name').textContent=u.name;
+  document.getElementById('d-loc').textContent=u.location||'';
+  document.getElementById('d-temp').textContent=fT(u.temp);
+  document.getElementById('d-temp').className='temp-hero-num '+sc;
   document.getElementById('d-badge').textContent=stLabel(s);
   document.getElementById('d-badge').className='badge '+sc;
-  document.getElementById('d-temp').textContent=fT(u.temp);
-  document.getElementById('d-temp').className='dstat-val '+sc;
-  document.getElementById('d-warn').textContent=u.warn_temp+'°C';
-  document.getElementById('d-crit').textContent=u.critical_temp+'°C';
-  document.getElementById('d-last').textContent=u.lastSeen?new Date(u.lastSeen).toLocaleTimeString('en-GB'):'—';
+  document.getElementById('d-hero-bg').className='temp-hero-bg '+sc;
+  document.getElementById('d-warn-t').textContent=u.warn_temp+'°C';
+  document.getElementById('d-crit-t').textContent=u.critical_temp+'°C';
+  document.getElementById('d-ago').textContent=ago(u.lastSeen);
+  document.getElementById('d-ago').style.fontSize='10px';
+  document.getElementById('d-ago').style.color='var(--text3)';
   const vals=u.history.map(p=>p.v).filter(v=>v!==null);
-  document.getElementById('d-min').textContent=vals.length?Math.min(...vals).toFixed(1)+'°C':'—';
-  document.getElementById('d-max').textContent=vals.length?Math.max(...vals).toFixed(1)+'°C':'—';
-  document.getElementById('btn-defrost').textContent=defrostState[SEL]?'Disable defrost':'Enable defrost';
-  drawDetailChart(u,s,sc);
+  document.getElementById('d-min').textContent=vals.length?Math.min(...vals).toFixed(1)+'°':'—';
+  document.getElementById('d-max').textContent=vals.length?Math.max(...vals).toFixed(1)+'°':'—';
+  const avg=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1)+'°':'—';
+  document.getElementById('d-avg').textContent=avg;
+  document.getElementById('d-min').className='dstat-val '+sc;
+  document.getElementById('d-max').className='dstat-val '+sc;
+
+  // Settings fields
+  document.getElementById('s-name').value=u.name;
+  document.getElementById('s-loc').value=u.location||'';
+  document.getElementById('s-warn').value=u.warn_temp;
+  document.getElementById('s-crit').value=u.critical_temp;
+
+  // Defrost toggle
+  document.getElementById('defrost-toggle').checked = u.defrost;
+
+  // Countdown ring
+  const rem=u.snoozeUntil>Date.now()?u.snoozeUntil-Date.now():0;
+  const cs=document.getElementById('countdown-section');
+  if(rem>0 || u.defrost) {
+    cs.style.display='block';
+    const ring=document.getElementById('countdown-ring');
+    if(rem>0) {
+      const pct=Math.max(0,rem/u.snoozeTotal);
+      const circ=326.7;
+      ring.style.strokeDashoffset=circ*(1-pct);
+      ring.style.stroke='var(--snz)';
+      document.getElementById('countdown-time').style.color='var(--snz)';
+      document.getElementById('countdown-time').textContent=fCountdown(rem)||'--:--';
+      document.getElementById('countdown-lbl').textContent='remaining';
+      document.getElementById('countdown-title').textContent='Snooze active';
+    } else if(u.defrost) {
+      ring.style.strokeDashoffset=0;
+      ring.style.stroke='var(--def)';
+      document.getElementById('countdown-time').style.color='var(--def)';
+      document.getElementById('countdown-time').textContent='DEF';
+      document.getElementById('countdown-lbl').textContent='active';
+      document.getElementById('countdown-title').textContent='Defrost mode';
+    }
+    // Highlight active snooze button
+    document.querySelectorAll('.snooze-time').forEach(b=>b.classList.remove('active'));
+  } else {
+    cs.style.display='none';
+    document.querySelectorAll('.snooze-time').forEach(b=>b.classList.remove('active'));
+  }
+
+  drawDetailChart(u,sc);
   renderDetailLog(u);
 }
 
-function drawDetailChart(u,s,sc) {
+function drawDetailChart(u,sc){
   const canvas=document.getElementById('d-chart'); if(!canvas) return;
   if(CHARTS['detail']){CHARTS['detail'].destroy();}
   const pts=u.history.slice(-60); if(!pts.length) return;
-  const c={ok:'#4a8c1c',none:'#4a8c1c',warning:'#c4821a',critical:'#cc3333',offline:'#4a4540',snoozed:'#2a6abf'}[sc]||'#4a8c1c';
+  const c=cssVar(sc);
   CHARTS['detail']=new Chart(canvas,{
     type:'line',
     data:{
       labels:pts.map(p=>new Date(p.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})),
       datasets:[
-        {label:'Temperature',data:pts.map(p=>p.v),borderColor:c,borderWidth:2,pointRadius:0,tension:0.3,fill:true,backgroundColor:c+'15'},
-        {label:'Warning',data:pts.map(()=>u.warn_temp),borderColor:'#c4821a',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
-        {label:'Critical',data:pts.map(()=>u.critical_temp),borderColor:'#cc3333',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false}
+        {label:'Temperature',data:pts.map(p=>p.v),borderColor:c,borderWidth:1.5,pointRadius:0,tension:0.3,fill:true,backgroundColor:c.replace(')',', .08)').replace('var(','rgba(').replace('--ok','0,229,170').replace('--warn','255,167,38').replace('--crit','255,23,68').replace('--def','0,180,216').replace('--snz','124,77,255').replace('--off','69,90,100')},
+        {label:'Warn',data:pts.map(()=>u.warn_temp),borderColor:'var(--warn)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
+        {label:'Crit',data:pts.map(()=>u.critical_temp),borderColor:'var(--crit)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false}
       ]
     },
     options:{
       responsive:true,maintainAspectRatio:false,animation:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+'°C'}}},
+      plugins:{legend:{display:false}},
       scales:{
-        x:{ticks:{maxTicksLimit:6,font:{size:9},color:'#6b6254'},grid:{color:'#2e2b24'}},
-        y:{ticks:{font:{size:9},color:'#6b6254',callback:v=>v+'°'},grid:{color:'#2e2b24'}}
+        x:{ticks:{maxTicksLimit:6,font:{size:9},color:'var(--text3)'},grid:{color:'var(--border)'}},
+        y:{ticks:{font:{size:9},color:'var(--text3)',callback:v=>v+'°'},grid:{color:'var(--border)'}}
       }
     }
   });
 }
 
-function renderDetailLog(u) {
+function renderDetailLog(u){
   const tbody=document.getElementById('d-log');
-  const recent=u.history.slice(-15).reverse();
-  if(!recent.length){tbody.innerHTML='<tr><td colspan="3" class="empty">No readings yet</td></tr>';return;}
+  const recent=u.history.slice(-12).reverse();
+  if(!recent.length){tbody.innerHTML='<tr><td colspan="3" style="color:var(--text3)">No readings yet</td></tr>';return;}
   tbody.innerHTML=recent.map(p=>{
     const a=p.a||'none';
     const tc=a==='critical'?'tcrit':a==='warning'?'twarn':'tok';
-    return `<tr><td>${new Date(p.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td><td class="${tc}">${p.v}°C</td><td><span class="badge ${a}">${stLabel(a)}</span></td></tr>`;
+    return `<tr><td>${new Date(p.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td><td class="${tc}">${p.v}°C</td><td><span class="badge ${a==='none'?'ok':a}">${stLabel(a)}</span></td></tr>`;
   }).join('');
 }
 
-function liveUpdateDetail(r) {
+function updateDetailLive(r){
+  const u=UNITS[r.unit_name]; if(!u) return;
+  const s=st(u); const sc=stColor(s);
   document.getElementById('d-temp').textContent=fT(r.temp);
-  const a=r.alert||'none';
-  const sc=stColor(a);
-  document.getElementById('d-temp').className='dstat-val '+sc;
+  document.getElementById('d-temp').className='temp-hero-num '+sc;
+  document.getElementById('d-badge').textContent=stLabel(s);
+  document.getElementById('d-badge').className='badge '+sc;
+  document.getElementById('d-ago').textContent='just now';
+  // Prepend to log
   const tbody=document.getElementById('d-log');
+  const a=r.alert||'none';
   const tc=a==='critical'?'tcrit':a==='warning'?'twarn':'tok';
-  tbody.insertAdjacentHTML('afterbegin',`<tr><td>${new Date(r.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td><td class="${tc}">${r.temp}°C</td><td><span class="badge ${a}">${stLabel(a)}</span></td></tr>`);
+  tbody.insertAdjacentHTML('afterbegin',`<tr><td>${new Date(r.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td><td class="${tc}">${r.temp}°C</td><td><span class="badge ${a==='none'?'ok':a}">${stLabel(a)}</span></td></tr>`);
 }
 
 // ── COMMANDS ──
 async function sendCmd(unit,command,payload={}) {
   await SB.from('commands').insert({unit_name:unit,command,payload,executed:false});
-  document.getElementById('ctrl-note').textContent='✓ Command sent — Pi will relay to unit within 10 seconds';
-  setTimeout(()=>{document.getElementById('ctrl-note').textContent='';},6000);
 }
-function cmdSnooze(){if(SEL) sendCmd(SEL,'snooze',{minutes:30});}
-function cmdClearSnooze(){if(SEL) sendCmd(SEL,'silence');}
-function cmdDefrost(){
-  if(!SEL) return;
-  defrostState[SEL]=!defrostState[SEL];
-  sendCmd(SEL,defrostState[SEL]?'defrost_on':'defrost_off');
-  document.getElementById('btn-defrost').textContent=defrostState[SEL]?'Disable defrost':'Enable defrost';
-}
-function qSnooze(name){sendCmd(name,'snooze',{minutes:30});}
-function qDefrost(name){sendCmd(name,'defrost_on');}
 
-// ── EDIT MODAL ──
-function openEdit(){
-  if(!SEL||!UNITS[SEL]) return;
+async function sendSnooze(mins) {
+  if(!SEL) return;
   const u=UNITS[SEL];
-  document.getElementById('e-name').value=u.name;
-  document.getElementById('e-loc').value=u.location||'';
-  document.getElementById('e-warn').value=u.warn_temp;
-  document.getElementById('e-crit').value=u.critical_temp;
-  document.getElementById('e-status').textContent='';
-  document.getElementById('edit-modal').classList.add('show');
+  const now=Date.now();
+  if(u.snoozeUntil<now) {
+    u.snoozeUntil=now+(mins*60000);
+  } else {
+    u.snoozeUntil+=mins*60000;
+  }
+  u.snoozeTotal=u.snoozeUntil-now;
+  u.snoozed=true;
+  document.querySelectorAll('.snooze-time').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.snooze-time[data-mins="${mins}"]`)?.classList.add('active');
+  await sendCmd(SEL,'snooze',{minutes:mins});
+  renderDetailFull();
 }
-function closeEdit(){document.getElementById('edit-modal').classList.remove('show');}
-async function saveEdit(){
-  const name=document.getElementById('e-name').value.trim();
-  const loc=document.getElementById('e-loc').value.trim();
-  const warn=parseFloat(document.getElementById('e-warn').value);
-  const crit=parseFloat(document.getElementById('e-crit').value);
-  if(!name||isNaN(warn)||isNaN(crit)){
-    document.getElementById('e-status').style.color='var(--crit)';
-    document.getElementById('e-status').textContent='Fill in all fields';
-    return;
-  }
+
+async function sendClear() {
+  if(!SEL) return;
+  UNITS[SEL].snoozeUntil=0; UNITS[SEL].snoozeTotal=0; UNITS[SEL].snoozed=false;
+  document.querySelectorAll('.snooze-time').forEach(b=>b.classList.remove('active'));
+  await sendCmd(SEL,'silence');
+  renderDetailFull();
+}
+
+async function toggleDefrost(active) {
+  if(!SEL) return;
+  UNITS[SEL].defrost=active;
+  await sendCmd(SEL,active?'defrost_on':'defrost_off');
+  renderDetailFull();
+}
+
+async function qSendSnooze(name,mins) {
+  const u=UNITS[name]; if(!u) return;
+  const now=Date.now();
+  u.snoozeUntil=u.snoozeUntil>now?u.snoozeUntil+(mins*60000):now+(mins*60000);
+  u.snoozeTotal=u.snoozeUntil-now; u.snoozed=true;
+  await sendCmd(name,'snooze',{minutes:mins});
+  renderAll();
+}
+
+async function qToggleDefrost(name) {
+  const u=UNITS[name]; if(!u) return;
+  u.defrost=!u.defrost;
+  await sendCmd(name,u.defrost?'defrost_on':'defrost_off');
+  renderAll();
+}
+
+// ── SETTINGS ──
+async function saveSettings(){
+  if(!SEL) return;
+  const name=document.getElementById('s-name').value.trim();
+  const loc=document.getElementById('s-loc').value.trim();
+  const warn=parseFloat(document.getElementById('s-warn').value);
+  const crit=parseFloat(document.getElementById('s-crit').value);
+  if(!name||isNaN(warn)||isNaN(crit)) return;
   const {error}=await SB.from('units').update({name,location:loc,warn_temp:warn,critical_temp:crit}).eq('name',SEL);
-  if(error){
-    document.getElementById('e-status').style.color='var(--crit)';
-    document.getElementById('e-status').textContent='Save failed';
-    return;
-  }
+  const note=document.getElementById('save-note');
+  if(error){note.style.color='var(--crit)';note.textContent='Save failed';return;}
   UNITS[name]={...UNITS[SEL],name,location:loc,warn_temp:warn,critical_temp:crit};
   if(name!==SEL){delete UNITS[SEL];}
   SEL=name;
-  document.getElementById('e-status').style.color='var(--ok)';
-  document.getElementById('e-status').textContent='✓ Saved — Pi will push new thresholds to node';
+  note.style.color='var(--ok)';
+  note.textContent='✓ Saved — Pi will push new thresholds to node';
   renderAll();
-  setTimeout(closeEdit,2000);
+  setTimeout(()=>{note.textContent='';},4000);
 }
 
 // ── HACCP ──
-function populateHACCP(unitList){
+function populateHACCP(units){
   const sel=document.getElementById('h-unit');
-  sel.innerHTML=unitList.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
+  sel.innerHTML=units.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
 }
 async function loadHACCP(){
   const unit=document.getElementById('h-unit').value;
@@ -592,21 +770,19 @@ async function loadHACCP(){
   const {data}=await SB.from('temperature_logs').select('*').eq('unit_name',unit).gte('created_at',date+'T00:00:00').lte('created_at',date+'T23:59:59').order('created_at');
   const tbody=document.getElementById('h-body');
   const sum=document.getElementById('h-sum');
-  if(!data||!data.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No records found</td></tr>';sum.textContent='';return;}
+  if(!data||!data.length){tbody.innerHTML='<tr><td colspan="6" style="padding:20px;color:var(--text3);text-align:center">No records found</td></tr>';sum.textContent='';return;}
   const temps=data.map(r=>r.temp).filter(v=>v!==null);
-  const avg=temps.length?(temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1):'—';
-  sum.textContent=`${data.length} readings · Avg ${avg}°C · Min ${Math.min(...temps).toFixed(1)}°C · Max ${Math.max(...temps).toFixed(1)}°C`;
+  sum.textContent=`${data.length} readings · Avg ${(temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1)}°C · Min ${Math.min(...temps).toFixed(1)}°C · Max ${Math.max(...temps).toFixed(1)}°C`;
   tbody.innerHTML=data.map(r=>{
-    const d=new Date(r.created_at);
-    const a=r.alert||'none';
+    const d=new Date(r.created_at); const a=r.alert||'none';
     const tc=a==='critical'?'tcrit':a==='warning'?'twarn':'tok';
-    return `<tr><td>${d.toLocaleDateString('en-GB')}</td><td>${d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td><td>${r.unit_name}</td><td class="${tc}">${r.temp}°C</td><td><span class="badge ${a}">${stLabel(a)}</span></td><td>${r.snoozed?'Yes':'—'}</td></tr>`;
+    return `<tr><td>${d.toLocaleDateString('en-GB')}</td><td>${d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td><td>${r.unit_name}</td><td class="${tc}">${r.temp}°C</td><td><span class="badge ${a==='none'?'ok':a}">${stLabel(a)}</span></td><td>${r.snoozed?'Yes':'—'}</td></tr>`;
   }).join('');
 }
 function exportCSV(){
   const rows=[...document.querySelectorAll('#h-body tr')];
   const lines=['Date,Time,Unit,Temperature,Status,Snoozed'];
-  rows.forEach(r=>{const cells=[...r.querySelectorAll('td')];if(cells.length<6) return;lines.push(cells.map(c=>'"'+c.innerText.replace(/"/g,'""')+'"').join(','));});
+  rows.forEach(r=>{const c=[...r.querySelectorAll('td')];if(c.length<6) return;lines.push(c.map(x=>'"'+x.innerText.replace(/"/g,'""')+'"').join(','));});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
   a.download='haccp-'+document.getElementById('h-unit').value.replace(/\s+/g,'-').toLowerCase()+'-'+document.getElementById('h-date').value+'.csv';
@@ -620,23 +796,37 @@ function setTab(tab){
     document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
   });
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['overview','detail','haccp'][i]===tab));
-  document.querySelectorAll('.sb-nav-item').forEach((el,i)=>el.classList.toggle('active',['overview','haccp'][i]===tab));
-  if(tab==='detail'&&SEL) renderDetailFull();
   document.getElementById('topbar-title').textContent=tab==='overview'?'Overview':tab==='detail'?(SEL||'Unit detail'):'HACCP Log';
+  if(tab==='detail'&&SEL) renderDetailFull();
 }
 
-function selectUnit(name){SEL=name;renderSidebar();}
-function slug(s){return s.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-]/g,'').toLowerCase();}
-
-// ── CLOCK ──
+// ── CLOCK / TICK ──
 function tick(){
   document.getElementById('sb-clock').textContent=new Date().toLocaleTimeString('en-GB');
+  // Update countdown rings and offline detection
   Object.values(UNITS).forEach(u=>{
     if(u.lastSeen&&(Date.now()-new Date(u.lastSeen))/60000>5&&u.alert!=='offline'){
-      u.alert='offline';renderAll();
+      u.alert='offline'; renderAll();
+    }
+    if(u.snoozeUntil>0&&Date.now()>u.snoozeUntil){
+      u.snoozeUntil=0; u.snoozeTotal=0; u.snoozed=false; renderAll();
     }
   });
+  // Update countdown in detail if visible
+  if(activeTab==='detail'&&SEL&&UNITS[SEL]){
+    const u=UNITS[SEL];
+    const rem=u.snoozeUntil>Date.now()?u.snoozeUntil-Date.now():0;
+    if(rem>0){
+      const pct=rem/u.snoozeTotal;
+      document.getElementById('countdown-ring').style.strokeDashoffset=326.7*(1-pct);
+      document.getElementById('countdown-time').textContent=fCountdown(rem)||'--:--';
+    }
+  }
+  renderSidebar();
 }
+
+function slug(s){return s.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-]/g,'').toLowerCase();}
 </script>
 </body>
 </html>
+
