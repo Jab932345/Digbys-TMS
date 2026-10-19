@@ -150,11 +150,22 @@ with sync_playwright() as p:
         stats = page.inner_text('#stat-row')
         check('5/6' in stats, '[%d] online 5/6' % width)
 
+        # alarm sound: Main Fridge siren is due -> website alarms
+        page.wait_for_timeout(700)
+        check(page.evaluate('ALARMING') is True, '[%d] website alarm sounding for Main Fridge' % width)
+        check(page.evaluate("AC!==null && AC.state==='running'"), '[%d] audio unlocked by sign-in tap' % width)
+        page.click('#snd-btn')
+        check(page.evaluate('SOUND') is False and 'OFF' in page.inner_text('#snd-btn'), '[%d] sound can be muted' % width)
+        page.click('#snd-btn')
+        check(page.evaluate('SOUND') is True, '[%d] sound back on' % width)
+
         # quick buttons on cards
         cards['Main Fridge'].query_selector('.qbtn.snz').click()
         page.wait_for_timeout(300)
         check(('set_snooze', {'p_unit': 'Main Fridge', 'p_minutes': 30, 'p_mode': 'add'}) in calls, '[%d] card snooze -> set_snooze add 30' % width)
         check('snoozed' in page.query_selector('#unit-grid .ucard[data-n="Main Fridge"]').get_attribute('class'), '[%d] card shows snoozed' % width)
+        page.wait_for_timeout(700)
+        check(page.evaluate('ALARMING') is False, '[%d] snooze silences website alarm' % width)
         page.query_selector('#unit-grid .ucard[data-n="Main Freezer"] .qbtn.def').click()
         page.wait_for_timeout(300)
         check(('set_defrost', {'p_unit': 'Main Freezer', 'p_on': True, 'p_minutes': 120}) in calls, '[%d] card defrost -> set_defrost on' % width)
