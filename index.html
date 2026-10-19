@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Digby's TMS</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -21,7 +21,7 @@
   --off:#3d4261;--off-bg:rgba(61,66,97,.06);--off-glow:rgba(61,66,97,.15);
 }
 html,body{height:100%;overflow:hidden}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;font-size:13px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;font-size:13px;padding-top:var(--bh,0px)}
 
 /* ── CRITICAL ALERT BANNER ─────────────────────────────── */
 .alert-banner{
@@ -40,7 +40,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* ── SIDEBAR ──────────────────────────────────────────── */
-.sb{width:210px;min-width:210px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh}
+.sb{width:210px;min-width:210px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:calc(100vh - var(--bh,0px))}
 .sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border)}
 .sb-logo h1{font-family:'Playfair Display',serif;font-size:15px;font-weight:400;letter-spacing:-.01em}
 .sb-logo p{font-size:9px;color:var(--text2);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
@@ -65,7 +65,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .live-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ok);margin-right:4px;animation:blink 2s infinite}
 
 /* ── MAIN ─────────────────────────────────────────────── */
-.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;height:calc(100vh - var(--bh,0px));overflow:hidden}
 .topbar{height:48px;padding:0 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg2);flex-shrink:0}
 .topbar-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:400}
 .tabs{display:flex;gap:1px;background:var(--border);border-radius:6px;overflow:hidden}
@@ -202,6 +202,34 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 .save-btn:hover{border-color:var(--ok);color:var(--ok)}
 .save-msg{font-size:9px;text-align:center;margin-top:6px;min-height:12px}
 
+/* Phone: the unit list moves into the overview grid, everything stacks */
+@media (max-width:760px){
+  .sb{display:none}
+  .main{width:100%}
+  .topbar{height:auto;padding:10px 16px;flex-wrap:wrap;gap:8px}
+  .tabs{width:100%}
+  .tab{flex:1}
+  .content{padding:12px 16px}
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .unit-grid{grid-template-columns:1fr}
+  .detail-layout{grid-template-columns:1fr}
+  .tbl-card{overflow-x:auto}
+  .alert-banner{flex-wrap:wrap;gap:8px}
+}
+
+/* Sign-in */
+.login{position:fixed;inset:0;z-index:2000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px}
+.login.hide{display:none}
+.login form{width:100%;max-width:320px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:10px}
+.login h2{font-family:'Playfair Display',serif;font-weight:400;font-size:22px;margin-bottom:6px}
+.login input{padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:14px}
+.login button{padding:10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:13px;cursor:pointer}
+.login-msg{font-size:11px;color:var(--crit);min-height:14px}
+.fw-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:6px;gap:8px}
+.fw-row b{font-family:'DM Mono',monospace;font-weight:400;color:var(--text);text-align:right;word-break:break-word}
+.fw-sel{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--bg);color:var(--text);margin:6px 0}
+.siren-tag{color:var(--crit);font-size:10px;font-weight:600;letter-spacing:.06em}
+
 /* HACCP */
 .hfilter{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
 .hfilter select,.hfilter input{padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--bg2);color:var(--text)}
@@ -217,6 +245,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 </style>
 </head>
 <body>
+
+<!-- SIGN IN -->
+<div class="login" id="login">
+  <form onsubmit="return doLogin(event)">
+    <h2>Digby's TMS</h2>
+    <input id="li-email" type="email" placeholder="Email" autocomplete="username" required>
+    <input id="li-pass" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit">Sign in</button>
+    <div class="login-msg" id="li-msg"></div>
+  </form>
+</div>
 
 <!-- CRITICAL ALERT BANNER -->
 <div class="alert-banner" id="alert-banner">
@@ -360,7 +399,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
                   <div class="toggle-knob"></div>
                 </label>
               </div>
-              <div class="defrost-note">Suppresses alerts during defrost. Clears automatically when disabled.</div>
+              <div class="defrost-note">Silences the siren on the unit for up to 2 hours, then switches itself off.</div>
             </div>
           </div>
 
@@ -374,8 +413,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
                 <div class="sf"><label>Warn °C</label><input id="s-warn" type="number" step="0.5"></div>
                 <div class="sf"><label>Critical °C</label><input id="s-crit" type="number" step="0.5"></div>
               </div>
+              <div class="sf"><label>Siren after critical for (minutes)</label><input id="s-delay" type="number" min="0" max="60" step="1"></div>
               <button class="save-btn" onclick="doSave()">Save settings</button>
               <div class="save-msg" id="save-msg"></div>
+            </div>
+          </div>
+
+          <!-- Firmware -->
+          <div class="ctrl-card">
+            <div class="ctrl-card-head">Unit firmware</div>
+            <div class="ctrl-card-body">
+              <div class="fw-row"><span>Running</span><b id="fw-ver">—</b></div>
+              <div class="fw-row"><span>Target</span><b id="fw-target">—</b></div>
+              <div class="fw-row"><span>Last event</span><b id="fw-status">—</b></div>
+              <div class="fw-row"><span>Wi-Fi signal</span><b id="fw-rssi">—</b></div>
+              <select class="fw-sel" id="fw-select"></select>
+              <button class="save-btn" onclick="doFw(false)">Update this unit</button>
+              <button class="save-btn" onclick="doFw(true)">Update all units</button>
+              <div class="save-msg" id="fw-msg"></div>
             </div>
           </div>
 
@@ -404,340 +459,370 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
 </div>
 
 <script>
+// Digby's TMS dashboard v2.
+// The unit and this page share one state per unit in temperature_live
+// (snooze_until, defrost_mode/defrost_until). The page changes it through RPCs;
+// units change it through node_sync. Realtime pushes every change here.
 const SB_URL='https://jaajrllkozknilvmdezt.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphYWpybGxrb3prbmlsdm1kZXp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMjQxNDAsImV4cCI6MjA5MjYwMDE0MH0.09U5cba3JxRmysrn2X3TxPqr-q6jJE4QhyeKQwEK03M';
-let SB,UNITS={},SEL=null,CHARTS={},activeTab='overview',bannerDismissed={};
+const OFFLINE_NEW_MS=90*1000;      // v2 units sync every few seconds
+const OFFLINE_OLD_MS=5*60*1000;    // units not yet on v2
+const HIST_GAP_MS=55*1000;         // one chart point per minute
+let SB,UNITS={},SEL=null,CHARTS={},activeTab='overview',bannerDismissed={},RELEASES=[],started=false,CHANNEL=null;
 
+// ── SIGN IN ──────────────────────────────────────────────
 window.addEventListener('load',async()=>{
   SB=window.supabase.createClient(SB_URL,SB_KEY);
-  await loadUnits(); subscribeRealtime();
-  setInterval(tick,500); setInterval(loadLatest,60000);
   document.getElementById('h-date').value=new Date().toISOString().slice(0,10);
+  const{data}=await SB.auth.getSession();
+  if(data&&data.session) start(); else showLogin(true);
+  SB.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_OUT'){started=false;showLogin(true);}});
 });
-
-async function loadUnits(){
-  const{data}=await SB.from('units').select('*').eq('active',true).order('name');
-  if(!data) return;
-  data.forEach(u=>{
-    UNITS[u.name]={...u,temp:null,alert:'offline',snoozed:false,defrost:false,
-      lastSeen:null,history:[],snoozeUntil:0,snoozeTotal:0};
-  });
-  populateHACCP(data); await loadLatest(); renderAll();
+function showLogin(on){document.getElementById('login').classList.toggle('hide',!on);}
+async function doLogin(e){
+  e.preventDefault();
+  const msg=document.getElementById('li-msg'); msg.textContent='';
+  const{error}=await SB.auth.signInWithPassword({
+    email:document.getElementById('li-email').value.trim(),
+    password:document.getElementById('li-pass').value});
+  if(error){msg.textContent=error.message;return false;}
+  start(); return false;
+}
+async function start(){
+  if(started) return; started=true; showLogin(false);
+  await loadUnits(); subscribeRealtime(); loadReleases();
+  setInterval(tick,500); setInterval(()=>loadLatest(),60000);
 }
 
-async function loadLatest(){
-  // Load current readings from temperature_live (fast, one row per unit)
-  const{data:live}=await SB.from('temperature_live').select('*');
-  if(live) live.forEach(r=>{
-    if(!UNITS[r.unit_name]) return;
-    const u=UNITS[r.unit_name];
-    u.temp=r.temp; u.alert=r.alert; u.snoozed=r.snoozed;
-    u.defrost=r.defrost_mode||false; u.lastSeen=r.updated_at;
-    if(r.snoozed&&u.snoozeUntil<Date.now()){
-      u.snoozeUntil=Date.now()+30*60000; u.snoozeTotal=30*60000;
-    }
-    if(!r.snoozed){u.snoozeUntil=0;u.snoozeTotal=0;}
-  });
+// ── HELPERS ──────────────────────────────────────────────
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function ms(iso){return iso?Date.parse(iso):0;}
+function toast(text,bad){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:3000;padding:9px 16px;border-radius:6px;font-size:12px;background:var(--bg3);border:1px solid var(--border2)';document.body.appendChild(t);}
+  t.textContent=text; t.style.color=bad?'var(--crit)':'var(--text)'; t.style.display='block';
+  clearTimeout(t._h); t._h=setTimeout(()=>{t.style.display='none';},bad?6000:2500);
+}
+async function rpc(fn,args){
+  const{data,error}=await SB.rpc(fn,args);
+  if(error){toast('Not saved: '+error.message,true);throw error;}
+  return data;
+}
 
-  // Load recent history from temperature_logs (for sparklines/graphs)
+// ── DATA ─────────────────────────────────────────────────
+function applyUnitRow(row){
+  const u=UNITS[row.name]||(UNITS[row.name]={temp:null,alert:'offline',lastSeen:null,history:[],
+    snoozeUntil:0,snoozeTotal:0,defrost:false,defrostUntil:0,siren:false});
+  Object.assign(u,row);
+  return u;
+}
+function applyLive(u,r){
+  u.temp=r.temp; u.alert=r.alert;
+  const su=ms(r.snooze_until);
+  if(su!==u.snoozeUntil){u.snoozeUntil=su; u.snoozeTotal=su>Date.now()?su-Date.now():0;}
+  u.defrost=!!r.defrost_mode; u.defrostUntil=ms(r.defrost_until);
+  u.snooze_source=r.snooze_source; u.siren=!!r.siren; u.fw_version=r.fw_version; u.fw_status=r.fw_status; u.rssi=r.rssi;
+  u.lastSeen=r.last_seen||r.updated_at;
+}
+async function loadUnits(){
+  const{data,error}=await SB.from('units').select('*').eq('active',true).order('name');
+  if(error){toast('Could not load units: '+error.message,true);return;}
+  const names=new Set(data.map(r=>r.name));
+  Object.keys(UNITS).forEach(n=>{if(!names.has(n)) delete UNITS[n];});
+  data.forEach(applyUnitRow);
+  populateHACCP(data); await loadLatest(true); renderAll();
+}
+async function loadLatest(skipUnits){
+  if(!skipUnits){
+    const{data}=await SB.from('units').select('*').eq('active',true);
+    if(data) data.forEach(applyUnitRow);
+  }
+  const{data:live}=await SB.from('temperature_live').select('*');
+  if(live) live.forEach(r=>{if(UNITS[r.unit_name]) applyLive(UNITS[r.unit_name],r);});
   const since=new Date(Date.now()-90*60*1000).toISOString();
-  const{data:logs}=await SB.from('temperature_logs').select('*').gte('created_at',since).order('created_at',{ascending:true});
+  const{data:logs}=await SB.from('temperature_logs').select('unit_name,temp,alert,created_at')
+    .gte('created_at',since).order('created_at',{ascending:true}).limit(5000);
   if(logs){
-    Object.keys(UNITS).forEach(n=>{UNITS[n].history=[];});
-    logs.forEach(r=>{
-      if(!UNITS[r.unit_name]) return;
-      UNITS[r.unit_name].history.push({t:r.created_at,v:r.temp,a:r.alert});
-    });
+    Object.values(UNITS).forEach(u=>{u.history=[];});
+    logs.forEach(r=>{const u=UNITS[r.unit_name]; if(u) u.history.push({t:r.created_at,v:r.temp,a:r.alert});});
   }
   document.getElementById('sb-status').textContent='live'; renderAll();
 }
-
+async function loadReleases(){
+  const{data}=await SB.from('firmware_releases').select('version,notes,created_at').order('created_at',{ascending:false});
+  RELEASES=data||[];
+  const sel=document.getElementById('fw-select');
+  sel.innerHTML='<option value="">No update (cancel a pending one)</option>'+
+    RELEASES.map(r=>`<option value="${esc(r.version)}">${esc(r.version)}${r.notes?' — '+esc(r.notes):''}</option>`).join('');
+  if(RELEASES.length) sel.value=RELEASES[0].version;
+}
 function subscribeRealtime(){
-  SB.channel('tms').on('postgres_changes',{event:'UPDATE',schema:'public',table:'temperature_live'},p=>{
-    const r=p.new; if(!UNITS[r.unit_name]) return;
-    const u=UNITS[r.unit_name];
-    u.temp=r.temp; u.alert=r.alert; u.snoozed=r.snoozed;
-    u.defrost=r.defrost_mode||false; u.lastSeen=r.updated_at;
-    u.history.push({t:r.updated_at,v:r.temp,a:r.alert});
-    if(u.history.length>90) u.history.shift();
-    if(!r.snoozed){u.snoozeUntil=0;u.snoozeTotal=0;}
-    document.getElementById('sb-status').textContent='live · '+new Date(r.updated_at).toLocaleTimeString('en-GB');
+  if(CHANNEL) SB.removeChannel(CHANNEL);
+  CHANNEL=SB.channel('tms').on('postgres_changes',{event:'*',schema:'public',table:'temperature_live'},p=>{
+    const r=p.new; if(!r||!r.unit_name) return;
+    const u=UNITS[r.unit_name]; if(!u){loadUnits();return;}
+    const prevAlert=u.alert; applyLive(u,r);
+    const last=u.history[u.history.length-1];
+    const t=r.updated_at||new Date().toISOString();
+    if(!last||Date.parse(t)-Date.parse(last.t)>=HIST_GAP_MS||prevAlert!==r.alert){
+      u.history.push({t,v:r.temp,a:r.alert}); if(u.history.length>120) u.history.shift();
+      if(SEL===r.unit_name&&activeTab==='detail') liveLog(u,{t,v:r.temp,a:r.alert});
+    }
+    document.getElementById('sb-status').textContent='live · '+new Date(t).toLocaleTimeString('en-GB');
     renderAll();
-    if(SEL===r.unit_name&&activeTab==='detail') liveUpdate(r);
-  }).subscribe();
+  }).subscribe(st=>{if(st==='CHANNEL_ERROR'||st==='TIMED_OUT') setTimeout(subscribeRealtime,5000);});
 }
 
-// ── STATUS ──────────────────────────────────────────────
+// ── STATUS ───────────────────────────────────────────────
+function snoozeLeft(u){return Math.max(0,(u.snoozeUntil||0)-Date.now());}
+function sirenOn(u){return u.siren&&!snoozeLeft(u)&&!defrostOn(u);}   // hide the gap until the unit reports
+function defrostOn(u){return u.defrost&&(!u.defrostUntil||u.defrostUntil>Date.now());}
 function st(u){
   if(!u.lastSeen) return 'offline';
-  if((Date.now()-new Date(u.lastSeen))/60000>5) return 'offline';
-  if(u.defrost) return 'defrost';
-  if(u.snoozed||u.snoozeUntil>Date.now()) return 'snoozed';
-  return u.alert||'ok';
+  const limit=u.device_id?OFFLINE_NEW_MS:OFFLINE_OLD_MS;
+  if(Date.now()-Date.parse(u.lastSeen)>limit) return 'offline';
+  if(defrostOn(u)) return 'defrost';
+  if(snoozeLeft(u)>0) return 'snoozed';
+  return u.alert==='none'?'ok':(u.alert||'ok');
 }
 function stLbl(s){return{ok:'Nominal',none:'Nominal',warning:'Warning',critical:'CRITICAL',offline:'Offline',snoozed:'Snoozed',defrost:'Defrost'}[s]||s}
 function cssCol(s){return{ok:'var(--ok)',none:'var(--ok)',warning:'var(--warn)',critical:'var(--crit)',offline:'var(--off)',snoozed:'var(--snz)',defrost:'var(--def)'}[s]||'var(--ok)'}
-function fT(t){return t!==null&&t!==undefined?t.toFixed(1)+'°':'—'}
+function fT(t){return t!==null&&t!==undefined?Number(t).toFixed(1)+'°':'—'}
 function ago(iso){
   if(!iso) return '—';
-  const s=Math.floor((Date.now()-new Date(iso))/1000);
+  const s=Math.max(0,Math.floor((Date.now()-Date.parse(iso))/1000));
   if(s<10) return 'just now'; if(s<60) return s+'s ago';
   if(s<3600) return Math.floor(s/60)+'m ago'; return Math.floor(s/3600)+'h ago';
 }
-function fCD(ms){
-  if(ms<=0) return null;
-  const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60;
+function fCD(msLeft){
+  if(msLeft<=0) return null;
+  const t=Math.floor(msLeft/1000),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60;
   if(h>0) return h+'h '+String(m).padStart(2,'0')+'m';
   return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
 }
 
 // ── CRITICAL ALERT BANNER ────────────────────────────────
+function critUnits(){return Object.values(UNITS).filter(u=>st(u)==='critical');}
 function updateBanner(){
-  const crits=Object.values(UNITS).filter(u=>u.alert==='critical'&&!u.snoozed&&!u.defrost&&st(u)==='critical');
+  const crits=critUnits();
   const banner=document.getElementById('alert-banner');
-  if(crits.length>0){
-    const names=crits.map(u=>u.name).join(', ');
-    const key=names;
+  if(crits.length){
+    const key=crits.map(u=>u.name).join(', ');
     if(!bannerDismissed[key]){
-      document.getElementById('alert-banner-text').textContent='CRITICAL — '+names;
-      banner.classList.add('show');
-      document.getElementById('main-area').style.marginTop='46px';
-      return;
+      document.getElementById('alert-banner-text').textContent='CRITICAL — '+key+(crits.some(sirenOn)?' · siren sounding':'');
+      banner.classList.add('show'); setBannerH(banner.offsetHeight); return;
     }
   }
-  banner.classList.remove('show');
-  document.getElementById('main-area').style.marginTop='0';
+  banner.classList.remove('show'); setBannerH(0);
 }
-
-function bannerSnooze(){
-  const crits=Object.values(UNITS).filter(u=>u.alert==='critical'&&!u.snoozed&&st(u)==='critical');
-  crits.forEach(u=>{
-    u.snoozeUntil=Date.now()+30*60000; u.snoozeTotal=30*60000; u.snoozed=true;
-    sendCmd(u.name,'snooze',{minutes:30});
-  });
-  bannerDismiss();
+function setBannerH(h){document.documentElement.style.setProperty('--bh',h+'px');}
+async function bannerSnooze(){
+  const crits=critUnits();
+  for(const u of crits){
+    try{u.snoozeUntil=ms(await rpc('set_snooze',{p_unit:u.name,p_minutes:30,p_mode:'set'}));u.snoozeTotal=30*60000;}catch(e){}
+  }
+  renderAll();
 }
-
 function bannerDismiss(){
-  const crits=Object.values(UNITS).filter(u=>u.alert==='critical');
-  const key=crits.map(u=>u.name).join(', ');
-  bannerDismissed[key]=true;
-  document.getElementById('alert-banner').classList.remove('show');
-  document.getElementById('main-area').style.marginTop='0';
-  setTimeout(()=>{delete bannerDismissed[key];},5*60*1000); // re-show after 5 min
+  const key=critUnits().map(u=>u.name).join(', ');
+  bannerDismissed[key]=true; updateBanner();
+  setTimeout(()=>{delete bannerDismissed[key];},5*60*1000);
 }
 
-// ── RENDER ──────────────────────────────────────────────
+// ── RENDER ───────────────────────────────────────────────
 function renderAll(){
   updateBanner(); renderSidebar(); renderStats();
   if(activeTab==='overview') renderGrid();
   if(activeTab==='detail'&&SEL) renderDetail();
 }
-
 function renderSidebar(){
-  const el=document.getElementById('sb-units'); el.innerHTML='';
-  Object.values(UNITS).forEach(u=>{
-    const s=st(u);
-    const rem=u.snoozeUntil>Date.now()?u.snoozeUntil-Date.now():0;
-    const d=document.createElement('div');
-    d.className='sb-unit '+s+(SEL===u.name?' sel':'');
-    d.onclick=()=>{SEL=u.name;setTab('detail');};
-    d.innerHTML=`<div class="sb-unit-info"><div class="sb-unit-name">${u.name}</div>${rem>0?`<div class="sb-unit-sub snz-sub">${fCD(rem)}</div>`:u.defrost?`<div class="sb-unit-sub" style="color:var(--def)">Defrost</div>`:''}</div><div class="sb-unit-temp st-${s}">${fT(u.temp)}</div>`;
-    el.appendChild(d);
+  const el=document.getElementById('sb-units');
+  const names=Object.keys(UNITS);
+  [...el.children].forEach(c=>{if(!UNITS[c.dataset.n]) c.remove();});
+  names.forEach(n=>{
+    const u=UNITS[n]; const s=st(u); const rem=snoozeLeft(u);
+    let d=[...el.children].find(c=>c.dataset.n===n);
+    if(!d){
+      d=document.createElement('div'); d.dataset.n=n;
+      d.onclick=()=>{SEL=d.dataset.n;setTab('detail');};
+      d.innerHTML='<div class="sb-unit-info"><div class="sb-unit-name"></div><div class="sb-unit-sub"></div></div><div class="sb-unit-temp"></div>';
+      el.appendChild(d);
+    }
+    d.className='sb-unit '+s+(SEL===n?' sel':'');
+    d.querySelector('.sb-unit-name').textContent=n;
+    const sub=d.querySelector('.sb-unit-sub');
+    sub.className='sb-unit-sub'+(rem>0?' snz-sub':'');
+    sub.style.color=sirenOn(u)?'var(--crit)':(defrostOn(u)&&!rem?'var(--def)':'');
+    sub.textContent=sirenOn(u)?'Siren':rem>0?fCD(rem):defrostOn(u)?'Defrost':'';
+    const tp=d.querySelector('.sb-unit-temp'); tp.className='sb-unit-temp st-'+s; tp.textContent=fT(u.temp);
   });
 }
-
 function renderStats(){
-  const all=Object.values(UNITS);
-  const on=all.filter(u=>st(u)!=='offline').length;
-  const cr=all.filter(u=>u.alert==='critical'&&!u.snoozed&&!u.defrost).length;
-  const wa=all.filter(u=>u.alert==='warning'&&!u.snoozed&&!u.defrost).length;
-  const ac=all.filter(u=>u.snoozed||u.defrost).length;
+  const all=Object.values(UNITS); const ss=all.map(st);
+  const on=ss.filter(s=>s!=='offline').length;
+  const cr=ss.filter(s=>s==='critical').length, wa=ss.filter(s=>s==='warning').length;
+  const ac=ss.filter(s=>s==='snoozed'||s==='defrost').length;
   document.getElementById('stat-row').innerHTML=`
     <div class="mini"><div class="mini-lbl">Online</div><div class="mini-val" style="color:${on===all.length?'var(--ok)':'var(--text2)'}">${on}/${all.length}</div></div>
     <div class="mini"><div class="mini-lbl">Critical</div><div class="mini-val" style="color:${cr>0?'var(--crit)':'var(--text)'}">${cr}</div></div>
     <div class="mini"><div class="mini-lbl">Warning</div><div class="mini-val" style="color:${wa>0?'var(--warn)':'var(--text)'}">${wa}</div></div>
-    <div class="mini"><div class="mini-lbl">Snoozed/Defrost</div><div class="mini-val" style="color:var(--text)">${ac}</div></div>
-  `;
+    <div class="mini"><div class="mini-lbl">Snoozed/Defrost</div><div class="mini-val" style="color:var(--text)">${ac}</div></div>`;
 }
-
 function renderGrid(){
   const grid=document.getElementById('unit-grid');
+  [...grid.children].forEach(c=>{if(!UNITS[c.dataset.n]) c.remove();});
   Object.values(UNITS).forEach(u=>{
-    const s=st(u);
-    const rem=u.snoozeUntil>Date.now()?u.snoozeUntil-Date.now():0;
-    let card=document.getElementById('uc-'+slug(u.name));
-    if(!card){card=document.createElement('div');card.id='uc-'+slug(u.name);grid.appendChild(card);}
+    const s=st(u); const rem=snoozeLeft(u);
+    let card=[...grid.children].find(c=>c.dataset.n===u.name);
+    if(!card){
+      card=document.createElement('div'); card.dataset.n=u.name;
+      card.onclick=()=>{SEL=card.dataset.n;setTab('detail');};
+      card.innerHTML=`<div class="ucard-body"><div class="ucard-top"><div><div class="ucard-name"></div><div class="ucard-loc" style="font-size:10px;color:var(--text3);margin-top:2px"></div></div><span class="badge"></span></div>
+        <div class="ucard-temp"></div><div class="ucard-countdown"></div></div>
+        <div class="ucard-foot"><div class="ucard-meta"></div></div>
+        <div class="ucard-controls"><button class="qbtn snz">+30m snooze</button><button class="qbtn def">Defrost</button></div>`;
+      const[b1,b2]=card.querySelectorAll('.qbtn');
+      b1.onclick=e=>{e.stopPropagation();qs(card.dataset.n,30);};
+      b2.onclick=e=>{e.stopPropagation();qd(card.dataset.n);};
+      grid.appendChild(card);
+    }
     card.className='ucard '+s;
-    card.onclick=()=>{SEL=u.name;setTab('detail');};
-    const cdHtml=rem>0?`<div class="ucard-countdown"><div class="cd-dot" style="background:var(--snz)"></div><span style="color:var(--snz);font-family:'DM Mono',monospace">${fCD(rem)}</span></div>`:u.defrost?`<div class="ucard-countdown"><div class="cd-dot" style="background:var(--def)"></div><span style="color:var(--def)">Defrost active</span></div>`:'<div class="ucard-countdown"></div>';
-    card.innerHTML=`
-      <div class="ucard-body">
-        <div class="ucard-top">
-          <div><div class="ucard-name">${u.name}</div><div class="ucard-loc" style="font-size:10px;color:var(--text3);margin-top:2px">${u.location||''}</div></div>
-          <span class="badge ${s}">${stLbl(s)}</span>
-        </div>
-        <div class="ucard-temp st-${s}">${fT(u.temp)}</div>
-        ${cdHtml}
-      </div>
-      <div class="ucard-foot">
-        <div class="ucard-meta">W ${u.warn_temp}° · C ${u.critical_temp}° · ${ago(u.lastSeen)}</div>
-      </div>
-      <div class="ucard-controls">
-        <button class="qbtn snz" onclick="event.stopPropagation();qs('${u.name}',30)">+30m snooze</button>
-        <button class="qbtn def" onclick="event.stopPropagation();qd('${u.name}')">Defrost</button>
-      </div>
-    `;
+    card.querySelector('.ucard-name').textContent=u.name;
+    card.querySelector('.ucard-loc').textContent=u.location||'';
+    const b=card.querySelector('.badge'); b.className='badge '+s; b.textContent=stLbl(s);
+    const tp=card.querySelector('.ucard-temp'); tp.className='ucard-temp st-'+s; tp.textContent=fT(u.temp);
+    const cd=card.querySelector('.ucard-countdown');
+    cd.innerHTML=sirenOn(u)?`<div class="cd-dot" style="background:var(--crit)"></div><span class="siren-tag">SIREN SOUNDING</span>`
+      :rem>0?`<div class="cd-dot" style="background:var(--snz)"></div><span style="color:var(--snz);font-family:'DM Mono',monospace">${fCD(rem)}</span>`
+      :defrostOn(u)?`<div class="cd-dot" style="background:var(--def)"></div><span style="color:var(--def)">Defrost active</span>`:'';
+    card.querySelector('.ucard-meta').textContent=`W ${u.warn_temp}° · C ${u.critical_temp}° · ${ago(u.lastSeen)}`;
   });
 }
 
-// ── DETAIL ──────────────────────────────────────────────
+// ── DETAIL ───────────────────────────────────────────────
 function renderDetail(){
   if(!SEL||!UNITS[SEL]) return;
-  const u=UNITS[SEL]; const s=st(u);
-  const c=cssCol(s);
+  const u=UNITS[SEL]; const s=st(u); const c=cssCol(s);
   document.getElementById('d-name').textContent=u.name;
   document.getElementById('d-loc').textContent=u.location||'';
   document.getElementById('d-temp').textContent=fT(u.temp);
   document.getElementById('d-temp').style.color=c;
-  document.getElementById('d-badge').textContent=stLbl(s);
+  document.getElementById('d-badge').textContent=stLbl(s)+(sirenOn(u)?' · SIREN':'');
   document.getElementById('d-badge').className='badge '+s;
   document.getElementById('d-glow').className='hero-glow '+s;
   document.getElementById('d-warn-t').textContent=u.warn_temp+'°C';
   document.getElementById('d-crit-t').textContent=u.critical_temp+'°C';
   document.getElementById('d-ago').textContent=ago(u.lastSeen);
-  const vals=u.history.map(p=>p.v).filter(v=>v!==null);
+  const vals=u.history.map(p=>p.v).filter(v=>v!==null&&v!==undefined).map(Number);
   document.getElementById('d-min').textContent=vals.length?Math.min(...vals).toFixed(1)+'°':'—';
   document.getElementById('d-max').textContent=vals.length?Math.max(...vals).toFixed(1)+'°':'—';
   document.getElementById('d-avg').textContent=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1)+'°':'—';
-  [document.getElementById('d-min'),document.getElementById('d-max'),document.getElementById('d-avg')].forEach(el=>el.style.color=c);
-  document.getElementById('def-toggle').checked=u.defrost;
-  document.getElementById('s-name').value=u.name;
-  document.getElementById('s-loc').value=u.location||'';
-  document.getElementById('s-warn').value=u.warn_temp;
-  document.getElementById('s-crit').value=u.critical_temp;
-  updateRing();
-  drawChart(u,s);
-  drawLog(u);
+  ['d-min','d-max','d-avg'].forEach(id=>document.getElementById(id).style.color=c);
+  document.getElementById('def-toggle').checked=defrostOn(u);
+  const ae=document.activeElement&&document.activeElement.id;
+  if(!['s-name','s-loc','s-warn','s-crit','s-delay'].includes(ae)){   // don't overwrite while typing
+    document.getElementById('s-name').value=u.name;
+    document.getElementById('s-loc').value=u.location||'';
+    document.getElementById('s-warn').value=u.warn_temp;
+    document.getElementById('s-crit').value=u.critical_temp;
+    document.getElementById('s-delay').value=Math.round((u.alarm_delay_s??180)/60);
+  }
+  document.getElementById('fw-ver').textContent=u.fw_version||'—';
+  document.getElementById('fw-target').textContent=u.fw_target?(u.fw_target===u.fw_version?u.fw_target+' (done)':u.fw_target+' (pending)'):'—';
+  document.getElementById('fw-status').textContent=u.fw_status||'—';
+  document.getElementById('fw-rssi').textContent=u.rssi!=null?u.rssi+' dBm':'—';
+  updateRing(); drawChart(u,s); drawLog(u);
 }
-
 function updateRing(){
   if(!SEL||!UNITS[SEL]) return;
-  const u=UNITS[SEL];
-  const rem=u.snoozeUntil>Date.now()?u.snoozeUntil-Date.now():0;
+  const u=UNITS[SEL]; const rem=snoozeLeft(u);
   const cd=document.getElementById('cd-card');
   if(rem>0){
     cd.style.display='block';
     document.getElementById('cd-title').textContent='Snooze active';
-    const pct=Math.max(0,Math.min(1,rem/u.snoozeTotal));
+    const pct=u.snoozeTotal>0?Math.max(0,Math.min(1,rem/u.snoozeTotal)):1;
     document.getElementById('cd-ring').style.strokeDashoffset=351.9*(1-pct);
     document.getElementById('cd-ring').style.stroke='var(--snz)';
     document.getElementById('cd-time').style.color='var(--snz)';
     document.getElementById('cd-time').textContent=fCD(rem)||'--:--';
     document.getElementById('cd-lbl').textContent='remaining';
     document.getElementById('cd-status').textContent='';
-    document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('active'));
-  } else if(u.defrost){
+  } else if(defrostOn(u)){
     cd.style.display='block';
     document.getElementById('cd-title').textContent='Defrost mode';
     document.getElementById('cd-ring').style.strokeDashoffset=0;
     document.getElementById('cd-ring').style.stroke='var(--def)';
     document.getElementById('cd-time').style.color='var(--def)';
-    document.getElementById('cd-time').textContent='DEF';
-    document.getElementById('cd-lbl').textContent='active';
+    const dl=u.defrostUntil?u.defrostUntil-Date.now():0;
+    document.getElementById('cd-time').textContent=dl>0?fCD(dl):'DEF';
+    document.getElementById('cd-lbl').textContent=dl>0?'remaining':'active';
   } else {
     cd.style.display='none';
-    document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('active'));
   }
+  document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('active'));
 }
-
 function drawChart(u,s){
   const canvas=document.getElementById('d-chart'); if(!canvas) return;
-  if(CHARTS['d']){CHARTS['d'].destroy();}
-  const pts=u.history.slice(-60); if(!pts.length) return;
-  const c=cssCol(s);
+  if(CHARTS['d']){CHARTS['d'].destroy();delete CHARTS['d'];}
+  const pts=u.history.slice(-90); if(!pts.length) return;
+  const c=getComputedStyle(document.documentElement).getPropertyValue(cssCol(s).slice(4,-1)).trim()||'#00e676';
   CHARTS['d']=new Chart(canvas,{
     type:'line',
-    data:{
-      labels:pts.map(p=>new Date(p.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})),
+    data:{labels:pts.map(p=>new Date(p.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})),
       datasets:[
-        {data:pts.map(p=>p.v),borderColor:c,borderWidth:2,pointRadius:0,tension:0.3,fill:true,backgroundColor:'rgba(0,0,0,0)'},
-        {data:pts.map(()=>u.warn_temp),borderColor:'var(--warn)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
-        {data:pts.map(()=>u.critical_temp),borderColor:'var(--crit)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false}
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,animation:false,
-      plugins:{legend:{display:false}},
-      scales:{
-        x:{ticks:{maxTicksLimit:6,font:{size:9},color:'#42475e'},grid:{color:'#1e2130'}},
-        y:{ticks:{font:{size:9},color:'#42475e',callback:v=>v+'°'},grid:{color:'#1e2130'}}
-      }
-    }
+        {data:pts.map(p=>p.v),borderColor:c,borderWidth:2,pointRadius:0,tension:0.3,fill:false},
+        {data:pts.map(()=>u.warn_temp),borderColor:'#ff9800',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
+        {data:pts.map(()=>u.critical_temp),borderColor:'#ff1744',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{maxTicksLimit:6,font:{size:9},color:'#42475e'},grid:{color:'#1e2130'}},
+              y:{ticks:{font:{size:9},color:'#42475e',callback:v=>v+'°'},grid:{color:'#1e2130'}}}}
   });
 }
-
+function logRow(p){
+  const a=p.a||'none'; const tc=a==='critical'?'tcrit':a==='warning'?'twarn':'tok';
+  const v=p.v===null||p.v===undefined?'probe fault':Number(p.v).toFixed(1)+'°C';
+  return `<tr><td>${new Date(p.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td><td class="${tc}">${v}</td><td><span class="badge ${a==='none'?'ok':esc(a)}">${stLbl(a)}</span></td></tr>`;
+}
 function drawLog(u){
   const tb=document.getElementById('d-log');
   const pts=u.history.slice(-12).reverse();
-  if(!pts.length){tb.innerHTML='<tr><td colspan="3" style="color:var(--text3)">No readings yet</td></tr>';return;}
-  tb.innerHTML=pts.map(p=>{
-    const a=p.a||'none';
-    const tc=a==='critical'?'tcrit':a==='warning'?'twarn':'tok';
-    return `<tr><td>${new Date(p.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td><td class="${tc}">${p.v}°C</td><td><span class="badge ${a==='none'?'ok':a}">${stLbl(a)}</span></td></tr>`;
-  }).join('');
+  tb.innerHTML=pts.length?pts.map(logRow).join(''):'<tr><td colspan="3" style="color:var(--text3)">No readings yet</td></tr>';
+}
+function liveLog(u,p){
+  const tb=document.getElementById('d-log');
+  tb.insertAdjacentHTML('afterbegin',logRow(p));
+  while(tb.rows.length>12) tb.deleteRow(tb.rows.length-1);
 }
 
-function liveUpdate(r){
-  const u=UNITS[r.unit_name]; if(!u) return;
-  const s=st(u); const c=cssCol(s);
-  document.getElementById('d-temp').textContent=fT(r.temp);
-  document.getElementById('d-temp').style.color=c;
-  document.getElementById('d-badge').textContent=stLbl(s);
-  document.getElementById('d-badge').className='badge '+s;
-  document.getElementById('d-ago').textContent='just now';
-  const a=r.alert||'none';
-  const tc=a==='critical'?'tcrit':a==='warning'?'twarn':'tok';
-  document.getElementById('d-log').insertAdjacentHTML('afterbegin',`<tr><td>${new Date(r.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td><td class="${tc}">${r.temp}°C</td><td><span class="badge ${a==='none'?'ok':a}">${stLbl(a)}</span></td></tr>`);
+// ── CONTROLS (all go through the database, so the unit follows) ──
+async function snoozeUnit(name,mins,mode){
+  const u=UNITS[name]; if(!u) return;
+  try{
+    const until=await rpc('set_snooze',{p_unit:name,p_minutes:mins,p_mode:mode});
+    u.snoozeUntil=ms(until); u.snoozeTotal=u.snoozeUntil?u.snoozeUntil-Date.now():0;
+    toast(mins?`${name}: snoozed until ${new Date(u.snoozeUntil).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:`${name}: snooze cleared`);
+  }catch(e){}
+  renderAll();
 }
-
-// ── COMMANDS ────────────────────────────────────────────
-async function sendCmd(unit,command,payload={}){
-  await SB.from('commands').insert({unit_name:unit,command,payload,executed:false});
+async function defrostUnit(name,on){
+  const u=UNITS[name]; if(!u) return;
+  try{
+    const until=await rpc('set_defrost',{p_unit:name,p_on:on,p_minutes:120});
+    u.defrost=on; u.defrostUntil=ms(until);
+    toast(on?`${name}: defrost on for 2 hours`:`${name}: defrost off`);
+  }catch(e){}
+  renderAll();
 }
-
-function doSnooze(mins){
-  if(!SEL) return;
-  const u=UNITS[SEL]; const now=Date.now();
-  u.snoozeUntil=u.snoozeUntil>now?u.snoozeUntil+(mins*60000):now+(mins*60000);
-  u.snoozeTotal=u.snoozeUntil-now; u.snoozed=true;
-  document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector(`.sp-btn[data-m="${mins}"]`)?.classList.add('active');
-  sendCmd(SEL,'snooze',{minutes:mins});
-  updateRing(); renderSidebar();
-}
-
+function doSnooze(mins){if(SEL) snoozeUnit(SEL,mins,'add');}
 function doCustomSnooze(){
-  const mins=parseInt(document.getElementById('custom-mins').value);
-  if(!mins||mins<1||mins>480) return;
-  document.getElementById('custom-mins').value='';
-  doSnooze(mins);
+  const mins=parseInt(document.getElementById('custom-mins').value,10);
+  if(!mins||mins<1||mins>480){toast('Enter 1 to 480 minutes',true);return;}
+  document.getElementById('custom-mins').value=''; doSnooze(mins);
 }
-
-function doClear(){
-  if(!SEL) return;
-  UNITS[SEL].snoozeUntil=0; UNITS[SEL].snoozeTotal=0; UNITS[SEL].snoozed=false;
-  document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('active'));
-  sendCmd(SEL,'silence');
-  updateRing(); renderSidebar();
-}
-
-function doDefrost(active){
-  if(!SEL) return;
-  UNITS[SEL].defrost=active;
-  sendCmd(SEL,active?'defrost_on':'defrost_off');
-  updateRing(); renderSidebar();
-}
+function doClear(){if(SEL) snoozeUnit(SEL,0,'set');}
+function doDefrost(active){if(SEL) defrostUnit(SEL,active);}
+function qs(name,mins){snoozeUnit(name,mins,'add');}
+function qd(name){const u=UNITS[name]; if(u) defrostUnit(name,!defrostOn(u));}
 
 async function doSave(){
   if(!SEL) return;
@@ -745,51 +830,52 @@ async function doSave(){
   const loc=document.getElementById('s-loc').value.trim();
   const warn=parseFloat(document.getElementById('s-warn').value);
   const crit=parseFloat(document.getElementById('s-crit').value);
-  if(!name||isNaN(warn)||isNaN(crit)) return;
-  const{error}=await SB.from('units').update({name,location:loc,warn_temp:warn,critical_temp:crit}).eq('name',SEL);
+  const delayMin=parseInt(document.getElementById('s-delay').value,10);
   const msg=document.getElementById('save-msg');
-  if(error){msg.style.color='var(--crit)';msg.textContent='Save failed';return;}
-  UNITS[name]={...UNITS[SEL],name,location:loc,warn_temp:warn,critical_temp:crit};
-  if(name!==SEL){delete UNITS[SEL];}
-  SEL=name;
-  msg.style.color='var(--ok)'; msg.textContent='✓ Saved';
-  renderAll(); setTimeout(()=>{msg.textContent='';},3000);
+  if(!name||isNaN(warn)||isNaN(crit)||isNaN(delayMin)||delayMin<0||delayMin>60){msg.style.color='var(--crit)';msg.textContent='Check the fields';return;}
+  if(warn>=crit){msg.style.color='var(--crit)';msg.textContent='Warning must be below critical';return;}
+  try{await rpc('update_unit_settings',{p_unit:SEL,p_name:name,p_location:loc,p_warn:warn,p_crit:crit,p_delay_s:delayMin*60});}
+  catch(e){msg.style.color='var(--crit)';msg.textContent='Save failed';return;}
+  const u=UNITS[SEL]; delete UNITS[SEL];
+  Object.assign(u,{name,location:loc,warn_temp:warn,critical_temp:crit,alarm_delay_s:delayMin*60});
+  UNITS[name]=u; SEL=name; populateHACCP(Object.values(UNITS));
+  msg.style.color='var(--ok)'; msg.textContent='✓ Saved — the unit picks this up within seconds';
+  renderAll(); setTimeout(()=>{msg.textContent='';},4000);
 }
-
-function qs(name,mins){
-  const u=UNITS[name]; if(!u) return;
-  const now=Date.now();
-  u.snoozeUntil=u.snoozeUntil>now?u.snoozeUntil+(mins*60000):now+(mins*60000);
-  u.snoozeTotal=u.snoozeUntil-now; u.snoozed=true;
-  sendCmd(name,'snooze',{minutes:mins});
-  renderAll();
-}
-
-function qd(name){
-  const u=UNITS[name]; if(!u) return;
-  u.defrost=!u.defrost;
-  sendCmd(name,u.defrost?'defrost_on':'defrost_off');
-  renderAll();
+async function doFw(all){
+  if(!SEL&&!all) return;
+  const v=document.getElementById('fw-select').value||null;
+  if(all&&!confirm(v?`Update ALL units to ${v}? Try one unit first if this is a new version.`:'Cancel pending updates on all units?')) return;
+  const msg=document.getElementById('fw-msg');
+  try{
+    const n=await rpc('set_fw_target',{p_version:v,p_units:all?null:[SEL]});
+    msg.style.color='var(--ok)'; msg.textContent=v?`Update to ${v} requested on ${n} unit(s)`:'Pending update cancelled';
+    await loadLatest();
+  }catch(e){msg.style.color='var(--crit)';msg.textContent='Failed';}
 }
 
 // ── HACCP ────────────────────────────────────────────────
 function populateHACCP(units){
-  document.getElementById('h-unit').innerHTML=units.map(u=>`<option value="${u.name}">${u.name}</option>`).join('');
+  const sel=document.getElementById('h-unit'); const cur=sel.value;
+  sel.innerHTML=units.map(u=>`<option value="${esc(u.name)}">${esc(u.name)}</option>`).join('');
+  if(cur&&units.some(u=>u.name===cur)) sel.value=cur;
 }
 async function loadHACCP(){
   const unit=document.getElementById('h-unit').value;
   const date=document.getElementById('h-date').value;
   if(!unit||!date) return;
-  const{data}=await SB.from('temperature_logs').select('*').eq('unit_name',unit).gte('created_at',date+'T00:00:00').lte('created_at',date+'T23:59:59').order('created_at');
-  const tb=document.getElementById('h-body');
-  const sum=document.getElementById('h-sum');
+  const from=new Date(date+'T00:00:00'), to=new Date(from.getTime()+86400000);   // local day
+  const{data}=await SB.from('temperature_logs').select('*').eq('unit_name',unit)
+    .gte('created_at',from.toISOString()).lt('created_at',to.toISOString()).order('created_at').limit(5000);
+  const tb=document.getElementById('h-body'); const sum=document.getElementById('h-sum');
   if(!data||!data.length){tb.innerHTML='<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text3)">No records found</td></tr>';sum.textContent='';return;}
-  const temps=data.map(r=>r.temp).filter(v=>v!==null);
-  sum.textContent=`${data.length} readings · Avg ${(temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1)}°C · Min ${Math.min(...temps).toFixed(1)}°C · Max ${Math.max(...temps).toFixed(1)}°C`;
+  const temps=data.map(r=>r.temp).filter(v=>v!==null).map(Number);
+  sum.textContent=`${data.length} readings`+(temps.length?` · Avg ${(temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1)}°C · Min ${Math.min(...temps).toFixed(1)}°C · Max ${Math.max(...temps).toFixed(1)}°C`:'');
   tb.innerHTML=data.map(r=>{
     const d=new Date(r.created_at); const a=r.alert||'none';
     const tc=a==='critical'?'tcrit':a==='warning'?'twarn':'tok';
-    return `<tr><td>${d.toLocaleDateString('en-GB')}</td><td>${d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td><td>${r.unit_name}</td><td class="${tc}">${r.temp}°C</td><td><span class="badge ${a==='none'?'ok':a}">${stLbl(a)}</span></td><td>${r.snoozed?'Yes':'—'}</td></tr>`;
+    const v=r.temp===null?'probe fault':Number(r.temp).toFixed(1)+'°C';
+    return `<tr><td>${d.toLocaleDateString('en-GB')}</td><td>${d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(r.unit_name)}</td><td class="${tc}">${v}</td><td><span class="badge ${a==='none'?'ok':esc(a)}">${stLbl(a)}</span></td><td>${r.snoozed?'Yes':'—'}</td></tr>`;
   }).join('');
 }
 function exportCSV(){
@@ -802,28 +888,21 @@ function exportCSV(){
   a.click();
 }
 
-// ── TABS ─────────────────────────────────────────────────
+// ── TABS / CLOCK ─────────────────────────────────────────
 function setTab(tab){
   activeTab=tab;
   ['overview','detail','haccp'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===tab?'block':'none';});
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['overview','detail','haccp'][i]===tab));
   document.getElementById('topbar-title').textContent=tab==='overview'?'Overview':tab==='detail'?(SEL||'Unit detail'):'HACCP Log';
-  if(tab==='detail'&&SEL) renderDetail();
+  renderAll();
 }
-
-// ── CLOCK / TICK ──────────────────────────────────────────
+let tickN=0;
 function tick(){
   document.getElementById('sb-clock').textContent=new Date().toLocaleTimeString('en-GB');
-  Object.values(UNITS).forEach(u=>{
-    if(u.snoozeUntil>0&&Date.now()>u.snoozeUntil){u.snoozeUntil=0;u.snoozeTotal=0;u.snoozed=false;}
-    if(u.lastSeen&&(Date.now()-new Date(u.lastSeen))/60000>5&&u.alert!=='offline'){u.alert='offline';}
-  });
-  if(activeTab==='detail'&&SEL) updateRing();
-  renderSidebar();
-  updateBanner();
+  renderSidebar(); updateBanner();
+  if(activeTab==='detail'&&SEL){updateRing();document.getElementById('d-ago').textContent=ago(UNITS[SEL]&&UNITS[SEL].lastSeen);}
+  if(activeTab==='overview'&&(++tickN%2===0)){renderGrid();renderStats();}
 }
-
-function slug(s){return s.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-]/g,'').toLowerCase();}
 </script>
 </body>
 </html>
