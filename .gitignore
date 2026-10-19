@@ -1,0 +1,5 @@
+# Per-unit configs hold each unit's key and the Wi-Fi password.
+firmware/configs/
+__pycache__/
+*.pyc
+firmware/build/
