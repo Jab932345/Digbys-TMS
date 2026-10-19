@@ -43,7 +43,7 @@ The siren sounds once a unit has been critical for the alarm delay (default 3 mi
 
 ## 2. Pi gateway (once)
 
-1. In the Flint router (192.168.8.1), go to **Clients**. Reserve a fixed IP for the Pi, for example `192.168.8.20`.
+1. In the Flint router (192.168.7.1), go to **Clients**. Reserve a fixed IP for the Pi, for example `192.168.7.131`.
 2. Copy this repo to the Pi, then run:
    ```
    sudo bash gateway/install.sh
@@ -51,7 +51,7 @@ The siren sounds once a unit has been critical for the alarm delay (default 3 mi
    It finishes with `{"ok": true, ...}` and prints the Pi's IP address.
 3. Check it from the Mac:
    ```
-   curl http://192.168.8.20:8787/health
+   curl http://192.168.7.131:8787/health
    ```
    After a unit has synced, `supabase_ok_s_ago` will show a small number.
 
@@ -70,12 +70,12 @@ The USB port shows as `/dev/tty.usbserial-XXXX`. Find it with `ls /dev/tty.usb*`
 1. **Flash MicroPython 1.29.0.** This erases the board.
    ```
    esptool.py --port /dev/tty.usbserial-XXXX erase_flash
-   esptool.py --port /dev/tty.usbserial-XXXX --baud 460800 write_flash --flash_size=detect 0 ESP8266_GENERIC-20260824-v1.29.0.bin
+   esptool.py --port /dev/tty.usbserial-XXXX --baud 460800 write_flash --flash_mode dio --flash_size=4MB 0 ESP8266_GENERIC-20260824-v1.29.0.bin
    ```
 2. **Give the unit its identity.** Do this on the Mac, in the repo folder:
    ```
    export SUPABASE_SERVICE_KEY='...'   # Supabase → Project Settings → API → service_role
-   python3 tools/provision.py --device tms-01 --name "Main Freezer" --wifi "WIFI-NAME" "wifi-password" --gateway http://192.168.8.20:8787
+   python3 tools/provision.py --device tms-01 --name "Main Freezer" --wifi "WIFI-NAME" "wifi-password" --gateway http://192.168.7.131:8787
    ```
    - For the 3 existing units, use their names exactly as they appear on the website. Their thresholds and history are kept.
    - New units need thresholds as well, for example `--warn 5 --crit 8`.
@@ -98,11 +98,11 @@ The USB port shows as `/dev/tty.usbserial-XXXX`. Find it with `ls /dev/tty.usb*`
 
 | Part | D1 Mini pin | GPIO | Note |
 |---|---|---|---|
-| DS18B20 data | D2 | 4 | 4.7 kΩ pull-up to VBUS. Probe powered from **VBUS**, not 3V3. |
-| TM1637 CLK | D5 | 14 | |
-| TM1637 DIO | D6 | 12 | Must be 12 (Pin 15's boot pull-down stops the display). |
-| Relay IN (siren) | D1 | 5 | Active-low. Common ground with the 12 V supply. JD-VCC jumper off. Use channel K2. |
-| Button | D7 | 13 | Momentary button to GND. No resistor needed. |
+| DS18B20 data | D4 | 2 | As wired on the existing units. |
+| TM1637 CLK | D7 | 13 | |
+| TM1637 DIO | D6 | 12 | Must be 12. |
+| Button | D5 | 14 | Momentary button to GND. |
+| Relay IN (siren, optional) | D1 | 5 | Only if a siren relay is fitted to the unit. Active-low. |
 
 ## 5. Switch the website over
 

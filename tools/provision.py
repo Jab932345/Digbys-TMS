@@ -31,7 +31,7 @@ def main():
     ap.add_argument('--warn', type=float)
     ap.add_argument('--crit', type=float)
     ap.add_argument('--wifi', nargs=2, action='append', metavar=('SSID', 'PASSWORD'), required=True)
-    ap.add_argument('--gateway', default='http://192.168.8.20:8787')
+    ap.add_argument('--gateway', default='http://192.168.7.131:8787')
     ap.add_argument('--display-dp', action='store_true', help='display has decimal points')
     ap.add_argument('--pin', nargs=2, action='append', metavar=('NAME', 'GPIO'), default=[],
                     help='override a pin, e.g. --pin PIN_RELAY 5')

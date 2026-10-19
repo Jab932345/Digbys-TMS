@@ -10,14 +10,15 @@ WIFI = [
 ]
 
 # The TMS gateway on the Raspberry Pi (fixed IP set in the router).
-GATEWAY = 'http://192.168.8.20:8787'
+GATEWAY = 'http://192.168.7.131:8787'
 
-# Pins are GPIO numbers. D1 Mini labels: D1=5 D2=4 D5=14 D6=12 D7=13.
-PIN_PROBE = 4       # D2  DS18B20 data (4.7k pull-up to VBUS)
-PIN_TM_CLK = 14     # D5  TM1637 CLK
+# Pins are GPIO numbers, matching the existing units' wiring.
+# D1 Mini labels: D1=5 D2=4 D4=2 D5=14 D6=12 D7=13.
+PIN_PROBE = 2       # D4  DS18B20 data
+PIN_TM_CLK = 13     # D7  TM1637 CLK
 PIN_TM_DIO = 12     # D6  TM1637 DIO (must be 12)
-PIN_RELAY = 5       # D1  relay IN for the siren
-PIN_BUTTON = 13     # D7  push button to GND
+PIN_RELAY = 5       # D1  relay IN for a siren (unused if no relay is fitted)
+PIN_BUTTON = 14     # D5  push button to GND
 
 RELAY_ACTIVE_LOW = True
 DISPLAY_HAS_DP = False   # True if your display has decimal points (selftest shows 8.8.8.8)

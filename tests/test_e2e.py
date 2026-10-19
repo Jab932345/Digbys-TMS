@@ -184,7 +184,7 @@ else:
             shutil.copy(os.path.join(ROOT, 'firmware', f), DEV)
 cfg = open(os.path.join(ROOT, 'firmware', 'config.example.py')).read()
 cfg = cfg.replace("DEVICE_ID = 'tms-01'", "DEVICE_ID = 'tms-02'").replace("DEVICE_KEY = 'replace-me'", "DEVICE_KEY = %r" % KEY)
-cfg = cfg.replace("GATEWAY = 'http://192.168.8.20:8787'", "GATEWAY = 'http://127.0.0.1:%d'" % GW_PORT)
+cfg = cfg.replace("GATEWAY = 'http://192.168.7.131:8787'", "GATEWAY = 'http://127.0.0.1:%d'" % GW_PORT)
 assert 'tms-02' in cfg and KEY in cfg and str(GW_PORT) in cfg
 open(os.path.join(DEV, 'config.py'), 'w').write(cfg)
 open(os.path.join(DEV, 'fw.json'), 'w').write('{"v": "2.0.0"}')

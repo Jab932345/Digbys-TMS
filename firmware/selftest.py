@@ -67,11 +67,15 @@ btn = Pin(config.PIN_BUTTON, Pin.IN, Pin.PULL_UP)
 print('PRESS the button within 15 s')
 pressed = False
 t0 = time.ticks_ms()
+n = 0
 while time.ticks_diff(time.ticks_ms(), t0) < 15000:
     if btn.value() == 0:
         pressed = True
         break
     time.sleep_ms(20)
+    n += 1
+    if n % 50 == 0:
+        print('      waiting for button...')   # keeps ampy from timing out
 say(pressed, 'button', '(GPIO%d)' % config.PIN_BUTTON)
 
 # 6. Wi-Fi
@@ -83,7 +87,8 @@ if not sta.isconnected():
         sta.connect(ssid, pw)
         t0 = time.ticks_ms()
         while not sta.isconnected() and time.ticks_diff(time.ticks_ms(), t0) < 15000:
-            time.sleep_ms(200)
+            time.sleep_ms(1000)
+            print('      connecting to', ssid, '...')
         if sta.isconnected():
             break
 say(sta.isconnected(), 'wifi', str(sta.ifconfig()[0]) + ' rssi %s' % sta.status('rssi') if sta.isconnected() else '')
