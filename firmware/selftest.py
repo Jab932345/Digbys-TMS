@@ -37,7 +37,12 @@ try:
     import onewire
     import ds18x20
     ds = ds18x20.DS18X20(onewire.OneWire(Pin(config.PIN_PROBE)))
-    roms = ds.scan()
+    roms = []
+    for _ in range(10):                 # some probes need a few scans after power-up
+        roms = ds.scan()
+        if roms:
+            break
+        time.sleep_ms(750)
     say(len(roms) == 1, 'probe found', '%d sensor(s) on GPIO%d' % (len(roms), config.PIN_PROBE))
     for i in range(3):
         ds.convert_temp()
