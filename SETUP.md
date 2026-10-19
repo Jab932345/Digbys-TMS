@@ -58,7 +58,7 @@ The siren sounds once a unit has been critical for the alarm delay (default 3 mi
 ## 3. Mac tools (once)
 
 ```
-pip3 install adafruit-ampy esptool "mpy-cross==1.29.0.*"
+pip3 install mpremote esptool "mpy-cross==1.29.0.*"
 ```
 
 Download `ESP8266_GENERIC-20260824-v1.29.0.bin` from https://micropython.org/download/ESP8266_GENERIC/
@@ -86,7 +86,7 @@ The USB port shows as `/dev/tty.usbserial-XXXX`. Find it with `ls /dev/tty.usb*`
    ```
 4. **Run the self-test.** Watch the display and listen for the siren:
    ```
-   ampy --port /dev/tty.usbserial-XXXX run firmware/selftest.py
+   mpremote connect /dev/tty.usbserial-XXXX exec "import selftest"
    ```
    Every line must say PASS. Do not install the unit until it does.
 5. **Start it.** Press RST on the D1 Mini. Within 10 s the unit appears on the website with firmware 2.0.0.
