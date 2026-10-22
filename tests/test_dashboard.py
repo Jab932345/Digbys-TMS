@@ -98,6 +98,11 @@ def handle(route):
                     u.update(name=args['p_name'], location=args['p_location'], warn_temp=args['p_warn'],
                              critical_temp=args['p_crit'], alarm_delay_s=args['p_delay_s'])
             return route.fulfill(status=200, content_type='application/json', body='null')
+        if fn == 'set_low_alarm':
+            for u in UNITS:
+                if u['name'] == args['p_unit']:
+                    u.update(low_warn_temp=args['p_low_warn'], low_crit_temp=args['p_low_crit'])
+            return route.fulfill(status=200, content_type='application/json', body='null')
         return route.fulfill(status=404, content_type='application/json', body='{}')
     if path.startswith('/rest/v1/units'):
         return route.fulfill(status=200, content_type='application/json', body=json.dumps(UNITS))
@@ -214,6 +219,29 @@ with sync_playwright() as p:
         page.click('.save-btn >> nth=0')
         page.wait_for_timeout(400)
         check(('update_unit_settings', {'p_unit': 'Main Fridge', 'p_name': 'Main Fridge', 'p_location': 'Unit', 'p_warn': 5, 'p_crit': 8, 'p_delay_s': 120}) in calls, '[%d] settings saved via RPC' % width)
+        check(('set_low_alarm', {'p_unit': 'Main Fridge', 'p_low_warn': None, 'p_low_crit': None}) in calls, '[%d] sous vide off saved' % width)
+
+        # sous vide mode: too-cold limits, validation, save, too-cold siren on the page
+        check(not page.is_visible('#s-sv-row'), '[%d] too-cold fields hidden when off' % width)
+        page.check('#s-sv')
+        check(page.is_visible('#s-sv-row'), '[%d] too-cold fields shown when ticked' % width)
+        n0 = len(calls)
+        page.click('.save-btn >> nth=0')
+        page.wait_for_timeout(300)
+        check(len(calls) == n0 and 'both' in page.inner_text('#save-msg'), '[%d] sous vide needs both numbers' % width)
+        page.fill('#s-lwarn', '2')
+        page.fill('#s-lcrit', '1')
+        page.click('.save-btn >> nth=0')
+        page.wait_for_timeout(400)
+        check(('set_low_alarm', {'p_unit': 'Main Fridge', 'p_low_warn': 2, 'p_low_crit': 1}) in calls, '[%d] sous vide on saved' % width)
+        page.wait_for_timeout(1200)
+        check(page.is_checked('#s-sv') and page.input_value('#s-lwarn') == '2', '[%d] sous vide survives refresh' % width)
+        check('1' in page.inner_text('#d-crit-t') and '8' in page.inner_text('#d-crit-t'), '[%d] both limits shown' % width)
+        on = page.evaluate("(()=>{const u=UNITS['Main Fridge'];u.siren=false;u.temp=0.5;u.alarm_delay_s=0;u.coldSince=0;u.snoozeUntil=0;u.defrost=false;sirenOn(u);return sirenOn(u);})()")
+        check(on, '[%d] too-cold siren sounds on the page' % width)
+        off = page.evaluate("(()=>{const u=UNITS['Main Fridge'];u.temp=4;return sirenOn(u);})()")
+        check(not off, '[%d] too-cold siren stops when back in range' % width)
+        page.evaluate("UNITS['Main Fridge'].siren=true;UNITS['Main Fridge'].temp=9.1")
 
         # firmware
         page.select_option('#fw-select', '2.0.1')

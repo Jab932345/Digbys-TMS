@@ -5,6 +5,11 @@ revoke execute on function public.set_snooze(text,integer,text) from anon;
 revoke execute on function public.set_defrost(text,boolean,integer) from anon;
 revoke execute on function public.update_unit_settings(text,text,text,numeric,numeric,integer) from anon;
 revoke execute on function public.set_fw_target(text,text[]) from anon;
+do $$ begin
+  if to_regprocedure('public.set_low_alarm(text,numeric,numeric)') is not null then
+    revoke execute on function public.set_low_alarm(text,numeric,numeric) from anon;
+  end if;
+end $$;
 do $$
 declare t text;
 begin
