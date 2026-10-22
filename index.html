@@ -423,6 +423,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);displ
                 <div class="sf"><label>Critical °C</label><input id="s-crit" type="number" step="0.5"></div>
               </div>
               <div class="sf"><label>Siren after critical for (minutes)</label><input id="s-delay" type="number" min="0" max="60" step="1"></div>
+              <div class="sf"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="s-sv" type="checkbox" style="width:auto" onchange="svToggle()"> Sous vide mode (also alarm if too cold)</label></div>
+              <div class="sf-row" id="s-sv-row" style="display:none">
+                <div class="sf"><label>Too cold warn °C</label><input id="s-lwarn" type="number" step="0.5"></div>
+                <div class="sf"><label>Too cold critical °C</label><input id="s-lcrit" type="number" step="0.5"></div>
+              </div>
               <button class="save-btn" onclick="doSave()">Save settings</button>
               <div class="save-msg" id="save-msg"></div>
             </div>
@@ -586,7 +591,16 @@ function subscribeRealtime(){
 
 // ── STATUS ───────────────────────────────────────────────
 function snoozeLeft(u){return Math.max(0,(u.snoozeUntil||0)-Date.now());}
-function sirenOn(u){return u.siren&&!snoozeLeft(u)&&!defrostOn(u);}   // hide the gap until the unit reports
+function svOn(u){return u.low_warn_temp!=null&&u.low_crit_temp!=null;}
+function tooCold(u){return svOn(u)&&u.temp!=null&&Number(u.temp)<=Number(u.low_crit_temp);}
+// The unit only knows the too-hot limits, so the page raises the too-cold siren
+// itself once it has lasted the unit's alarm delay.
+function coldDue(u){
+  if(!tooCold(u)){u.coldSince=0;return false;}
+  if(!u.coldSince) u.coldSince=Date.now();
+  return Date.now()-u.coldSince>=(u.alarm_delay_s??180)*1000;
+}
+function sirenOn(u){return (u.siren||coldDue(u))&&!snoozeLeft(u)&&!defrostOn(u);}   // hide the gap until the unit reports
 function defrostOn(u){return u.defrost&&(!u.defrostUntil||u.defrostUntil>Date.now());}
 function st(u){
   if(!u.lastSeen) return 'offline';
@@ -655,7 +669,7 @@ function renderSidebar(){
     let d=[...el.children].find(c=>c.dataset.n===n);
     if(!d){
       d=document.createElement('div'); d.dataset.n=n;
-      d.onclick=()=>{SEL=d.dataset.n;setTab('detail');};
+      d.onclick=()=>{SEL=d.dataset.n;svDirty=false;setTab('detail');};
       d.innerHTML='<div class="sb-unit-info"><div class="sb-unit-name"></div><div class="sb-unit-sub"></div></div><div class="sb-unit-temp"></div>';
       el.appendChild(d);
     }
@@ -687,7 +701,7 @@ function renderGrid(){
     let card=[...grid.children].find(c=>c.dataset.n===u.name);
     if(!card){
       card=document.createElement('div'); card.dataset.n=u.name;
-      card.onclick=()=>{SEL=card.dataset.n;setTab('detail');};
+      card.onclick=()=>{SEL=card.dataset.n;svDirty=false;setTab('detail');};
       card.innerHTML=`<div class="ucard-body"><div class="ucard-top"><div><div class="ucard-name"></div><div class="ucard-loc" style="font-size:10px;color:var(--text3);margin-top:2px"></div></div><span class="badge"></span></div>
         <div class="ucard-temp"></div><div class="ucard-countdown"></div></div>
         <div class="ucard-foot"><div class="ucard-meta"></div></div>
@@ -706,7 +720,7 @@ function renderGrid(){
     cd.innerHTML=sirenOn(u)?`<div class="cd-dot" style="background:var(--crit)"></div><span class="siren-tag">SIREN SOUNDING</span>`
       :rem>0?`<div class="cd-dot" style="background:var(--snz)"></div><span style="color:var(--snz);font-family:'DM Mono',monospace">${fCD(rem)}</span>`
       :defrostOn(u)?`<div class="cd-dot" style="background:var(--def)"></div><span style="color:var(--def)">Defrost active</span>`:'';
-    card.querySelector('.ucard-meta').textContent=`W ${u.warn_temp}° · C ${u.critical_temp}° · ${ago(u.lastSeen)}`;
+    card.querySelector('.ucard-meta').textContent=(svOn(u)?`Sous vide ${u.low_crit_temp}–${u.critical_temp}° · `:`W ${u.warn_temp}° · C ${u.critical_temp}° · `)+ago(u.lastSeen);
   });
 }
 
@@ -721,8 +735,8 @@ function renderDetail(){
   document.getElementById('d-badge').textContent=stLbl(s)+(sirenOn(u)?' · SIREN':'');
   document.getElementById('d-badge').className='badge '+s;
   document.getElementById('d-glow').className='hero-glow '+s;
-  document.getElementById('d-warn-t').textContent=u.warn_temp+'°C';
-  document.getElementById('d-crit-t').textContent=u.critical_temp+'°C';
+  document.getElementById('d-warn-t').textContent=(svOn(u)?u.low_warn_temp+'° / ':'')+u.warn_temp+'°C';
+  document.getElementById('d-crit-t').textContent=(svOn(u)?u.low_crit_temp+'° / ':'')+u.critical_temp+'°C';
   document.getElementById('d-ago').textContent=ago(u.lastSeen);
   const vals=u.history.map(p=>p.v).filter(v=>v!==null&&v!==undefined).map(Number);
   document.getElementById('d-min').textContent=vals.length?Math.min(...vals).toFixed(1)+'°':'—';
@@ -731,12 +745,17 @@ function renderDetail(){
   ['d-min','d-max','d-avg'].forEach(id=>document.getElementById(id).style.color=c);
   document.getElementById('def-toggle').checked=defrostOn(u);
   const ae=document.activeElement&&document.activeElement.id;
-  if(!['s-name','s-loc','s-warn','s-crit','s-delay'].includes(ae)){   // don't overwrite while typing
+  if(!['s-name','s-loc','s-warn','s-crit','s-delay','s-sv','s-lwarn','s-lcrit'].includes(ae)&&!svDirty){   // don't overwrite while typing
     document.getElementById('s-name').value=u.name;
     document.getElementById('s-loc').value=u.location||'';
     document.getElementById('s-warn').value=u.warn_temp;
     document.getElementById('s-crit').value=u.critical_temp;
     document.getElementById('s-delay').value=Math.round((u.alarm_delay_s??180)/60);
+    const sv=svOn(u);
+    document.getElementById('s-sv').checked=sv;
+    document.getElementById('s-sv-row').style.display=sv?'':'none';
+    document.getElementById('s-lwarn').value=sv?u.low_warn_temp:'';
+    document.getElementById('s-lcrit').value=sv?u.low_crit_temp:'';
   }
   document.getElementById('fw-ver').textContent=u.fw_version||'—';
   document.getElementById('fw-target').textContent=u.fw_target?(u.fw_target===u.fw_version?u.fw_target+' (done)':u.fw_target+' (pending)'):'—';
@@ -783,7 +802,10 @@ function drawChart(u,s){
       datasets:[
         {data:pts.map(p=>p.v),borderColor:c,borderWidth:2,pointRadius:0,tension:0.3,fill:false},
         {data:pts.map(()=>u.warn_temp),borderColor:'#ff9800',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
-        {data:pts.map(()=>u.critical_temp),borderColor:'#ff1744',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false}]},
+        {data:pts.map(()=>u.critical_temp),borderColor:'#ff1744',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false}]
+        .concat(svOn(u)?[
+        {data:pts.map(()=>u.low_warn_temp),borderColor:'#ff9800',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
+        {data:pts.map(()=>u.low_crit_temp),borderColor:'#ff1744',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false}]:[])},
     options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},
       scales:{x:{ticks:{maxTicksLimit:6,font:{size:9},color:'#42475e'},grid:{color:'#1e2130'}},
               y:{ticks:{font:{size:9},color:'#42475e',callback:v=>v+'°'},grid:{color:'#1e2130'}}}}
@@ -835,6 +857,12 @@ function doDefrost(active){if(SEL) defrostUnit(SEL,active);}
 function qs(name,mins){snoozeUnit(name,mins,'add');}
 function qd(name){const u=UNITS[name]; if(u) defrostUnit(name,!defrostOn(u));}
 
+let svDirty=false;   // ticked/unticked but not saved yet: don't let a refresh undo it
+function svToggle(){
+  svDirty=true;
+  const on=document.getElementById('s-sv').checked;
+  document.getElementById('s-sv-row').style.display=on?'':'none';
+}
 async function doSave(){
   if(!SEL) return;
   const name=document.getElementById('s-name').value.trim();
@@ -845,10 +873,19 @@ async function doSave(){
   const msg=document.getElementById('save-msg');
   if(!name||isNaN(warn)||isNaN(crit)||isNaN(delayMin)||delayMin<0||delayMin>60){msg.style.color='var(--crit)';msg.textContent='Check the fields';return;}
   if(warn>=crit){msg.style.color='var(--crit)';msg.textContent='Warning must be below critical';return;}
-  try{await rpc('update_unit_settings',{p_unit:SEL,p_name:name,p_location:loc,p_warn:warn,p_crit:crit,p_delay_s:delayMin*60});}
+  const sv=document.getElementById('s-sv').checked;
+  const lwarn=sv?parseFloat(document.getElementById('s-lwarn').value):null;
+  const lcrit=sv?parseFloat(document.getElementById('s-lcrit').value):null;
+  if(sv&&(isNaN(lwarn)||isNaN(lcrit))){msg.style.color='var(--crit)';msg.textContent='Enter both too-cold temperatures';return;}
+  if(sv&&lcrit>=lwarn){msg.style.color='var(--crit)';msg.textContent='Too-cold critical must be below too-cold warn';return;}
+  if(sv&&lwarn>=warn){msg.style.color='var(--crit)';msg.textContent='Too-cold warn must be below the warn temperature';return;}
+  try{
+    await rpc('update_unit_settings',{p_unit:SEL,p_name:name,p_location:loc,p_warn:warn,p_crit:crit,p_delay_s:delayMin*60});
+    await rpc('set_low_alarm',{p_unit:name,p_low_warn:lwarn,p_low_crit:lcrit});
+  }
   catch(e){msg.style.color='var(--crit)';msg.textContent='Save failed';return;}
   const u=UNITS[SEL]; delete UNITS[SEL];
-  Object.assign(u,{name,location:loc,warn_temp:warn,critical_temp:crit,alarm_delay_s:delayMin*60});
+  Object.assign(u,{name,location:loc,warn_temp:warn,critical_temp:crit,alarm_delay_s:delayMin*60,low_warn_temp:lwarn,low_crit_temp:lcrit}); svDirty=false;
   UNITS[name]=u; SEL=name; populateHACCP(Object.values(UNITS));
   msg.style.color='var(--ok)'; msg.textContent='✓ Saved — the unit picks this up within seconds';
   renderAll(); setTimeout(()=>{msg.textContent='';},4000);
