@@ -483,6 +483,9 @@ const OFFLINE_NEW_MS=90*1000;      // v2 units sync every few seconds
 const OFFLINE_OLD_MS=5*60*1000;    // units not yet on v2
 const HIST_GAP_MS=55*1000;         // one chart point per minute
 const OPEN_MODE=true;               // TEMP: no sign-in. Set back to false to turn the password on again.
+// ?unit=tms-02 shows only that unit (by its device id, so a rename doesn't break the link).
+const ONLY=new URLSearchParams(location.search).get('unit');
+function keep(r){return !ONLY||r.device_id===ONLY;}
 let SB,UNITS={},SEL=null,CHARTS={},activeTab='overview',bannerDismissed={},RELEASES=[],started=false,CHANNEL=null;
 
 // ── SIGN IN ──────────────────────────────────────────────
@@ -545,13 +548,14 @@ async function loadUnits(){
   if(error){toast('Could not load units: '+error.message,true);return;}
   const names=new Set(data.map(r=>r.name));
   Object.keys(UNITS).forEach(n=>{if(!names.has(n)) delete UNITS[n];});
-  data.forEach(applyUnitRow);
-  populateHACCP(data); await loadLatest(true); renderAll();
+  const rows=data.filter(keep);
+  rows.forEach(applyUnitRow);
+  populateHACCP(rows); await loadLatest(true); renderAll();
 }
 async function loadLatest(skipUnits){
   if(!skipUnits){
     const{data}=await SB.from('units').select('*').eq('active',true);
-    if(data) data.forEach(applyUnitRow);
+    if(data) data.filter(keep).forEach(applyUnitRow);
   }
   const{data:live}=await SB.from('temperature_live').select('*');
   if(live) live.forEach(r=>{if(UNITS[r.unit_name]) applyLive(UNITS[r.unit_name],r);});
@@ -576,7 +580,7 @@ function subscribeRealtime(){
   if(CHANNEL) SB.removeChannel(CHANNEL);
   CHANNEL=SB.channel('tms').on('postgres_changes',{event:'*',schema:'public',table:'temperature_live'},p=>{
     const r=p.new; if(!r||!r.unit_name) return;
-    const u=UNITS[r.unit_name]; if(!u){loadUnits();return;}
+    const u=UNITS[r.unit_name]; if(!u){if(!ONLY) loadUnits();return;}
     const prevAlert=u.alert; applyLive(u,r);
     const last=u.history[u.history.length-1];
     const t=r.updated_at||new Date().toISOString();
