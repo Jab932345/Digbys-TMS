@@ -477,6 +477,7 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const OFFLINE_NEW_MS=90*1000;      // v2 units sync every few seconds
 const OFFLINE_OLD_MS=5*60*1000;    // units not yet on v2
 const HIST_GAP_MS=55*1000;         // one chart point per minute
+const OPEN_MODE=true;               // TEMP: no sign-in. Set back to false to turn the password on again.
 let SB,UNITS={},SEL=null,CHARTS={},activeTab='overview',bannerDismissed={},RELEASES=[],started=false,CHANNEL=null;
 
 // ── SIGN IN ──────────────────────────────────────────────
@@ -484,8 +485,8 @@ window.addEventListener('load',async()=>{
   SB=window.supabase.createClient(SB_URL,SB_KEY);
   document.getElementById('h-date').value=new Date().toISOString().slice(0,10);
   const{data}=await SB.auth.getSession();
-  if(data&&data.session) start(); else showLogin(true);
-  SB.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_OUT'){started=false;showLogin(true);}});
+  if(OPEN_MODE||(data&&data.session)) start(); else showLogin(true);
+  SB.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_OUT'&&!OPEN_MODE){started=false;showLogin(true);}});
 });
 function showLogin(on){document.getElementById('login').classList.toggle('hide',!on);}
 async function doLogin(e){
